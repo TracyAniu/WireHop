@@ -2,7 +2,7 @@
 
 ## C++ and Qt
 
-- Target the C++11 and Qt 5 baseline declared in `LANDrop/LANDrop.pro` unless a migration is explicitly approved.
+- Target the C++11 and Qt 5 baseline declared in `WireHop/WireHop.pro` unless a migration is explicitly approved.
 - Match the existing four-space indentation, brace placement, include grouping, and class/file naming.
 - Prefer Qt value/container types at Qt API and serialization boundaries.
 - Use QObject parent ownership or an existing smart-pointer pattern; avoid ambiguous lifetime and double ownership.
@@ -29,7 +29,7 @@
 
 - Access persisted preferences through `Settings` and keep default behavior cross-platform.
 - Validate filesystem targets before writing, and consider collisions, partial files, path traversal, symlinks, disk capacity, and cleanup.
-- Add user-visible text through Qt translation mechanisms and update `LANDrop/locales/LANDrop.zh_CN.ts` when appropriate.
+- Add user-visible text through Qt translation mechanisms and update `WireHop/locales/WireHop.zh_CN.ts` when appropriate.
 - Keep icons and locale files registered in their `.qrc` manifests.
 
 ## Dependencies and Platforms

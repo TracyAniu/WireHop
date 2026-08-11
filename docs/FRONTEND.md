@@ -2,7 +2,7 @@
 
 ## UI Model
 
-LANDrop is a Qt Widgets system-tray application, not a browser frontend. The tray menu is the primary navigation; `.ui` files define the dialogs for file selection, peer selection, transfer progress, settings, and about information.
+WireHop is a Qt Widgets system-tray application, not a browser frontend. The tray menu is the primary navigation; `.ui` files define the dialogs for file selection, peer selection, transfer progress, settings, and about information.
 
 ## Interaction Rules
 
@@ -15,8 +15,8 @@ LANDrop is a Qt Widgets system-tray application, not a browser frontend. The tra
 
 ## Forms, Strings, and Assets
 
-- Edit the relevant `LANDrop/*.ui` form rather than generated headers.
-- Add icons under `LANDrop/icons/` and register them in `LANDrop/icons.qrc`.
+- Edit the relevant `WireHop/*.ui` form rather than generated headers.
+- Add icons under `WireHop/icons/` and register them in `WireHop/icons.qrc`.
 - Wrap user-visible C++ strings in `tr()` and update the `.ts` catalog when strings change.
 - Check long filenames, large formatted sizes, translated strings, high-DPI rendering, keyboard focus, default buttons, and disabled/loading states.
 

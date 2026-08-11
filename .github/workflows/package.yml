@@ -2,16 +2,21 @@ name: Package
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   package_linux:
     name: Linux Package
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
 
       - name: Install libqxcb dependencies
         run: sudo apt install libfontconfig1-dev libfreetype6-dev libx11-dev libx11-xcb-dev libxext-dev libxfixes-dev libxi-dev libxrender-dev libxcb1-dev libxcb-glx0-dev libxcb-keysyms1-dev libxcb-image0-dev libxcb-shm0-dev libxcb-icccm4-dev libxcb-sync0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-randr0-dev libxcb-render-util0-dev libxcb-xinerama0-dev libxkbcommon-dev libxkbcommon-x11-dev
@@ -26,29 +31,31 @@ jobs:
           chmod +x linuxdeploy-*.AppImage
 
       - name: Build
-        working-directory: ./LANDrop
+        working-directory: ./WireHop
         run: qmake && make -j$(nproc)
 
       - name: Package
         run: |
-          ./linuxdeploy-x86_64.AppImage --appdir AppDir -e LANDrop/LANDrop -d misc/LANDrop.desktop -i LANDrop/icons/app.svg --icon-filename LANDrop -p qt -o appimage
-          mv LANDrop*.AppImage LANDrop-linux.AppImage
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir -e WireHop/WireHop -d misc/WireHop.desktop -i WireHop/icons/app.svg --icon-filename wirehop -p qt -o appimage
+          mv WireHop*.AppImage WireHop-linux.AppImage
 
       - name: Upload
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v7
         with:
           name: Linux-Build
-          path: LANDrop-linux.AppImage
+          path: WireHop-linux.AppImage
 
   package_windows:
     name: Windows Package
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
 
       - name: Install libsodium
         shell: bash
@@ -58,14 +65,14 @@ jobs:
 
       - name: Configure
         shell: bash
-        working-directory: ./LANDrop
+        working-directory: ./WireHop
         run: |
-          echo "INCLUDEPATH += ../libsodium/include" >> LANDrop.pro
-          echo "LIBS += -L../libsodium/x64/Release/v142/dynamic -llibsodium" >> LANDrop.pro
+          echo "INCLUDEPATH += ../libsodium/include" >> WireHop.pro
+          echo "LIBS += -L../libsodium/x64/Release/v142/dynamic -llibsodium" >> WireHop.pro
 
       - name: Build
         shell: cmd
-        working-directory: ./LANDrop
+        working-directory: ./WireHop
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           qmake -tp vc
@@ -73,50 +80,52 @@ jobs:
 
       - name: Package
         shell: bash
-        working-directory: ./LANDrop
+        working-directory: ./WireHop
         run: |
-          mkdir LANDrop
-          cd LANDrop
-          mv ../release/LANDrop.exe .
-          windeployqt LANDrop.exe
+          mkdir WireHop
+          cd WireHop
+          mv ../release/WireHop.exe .
+          windeployqt WireHop.exe
           cp ../../libsodium/x64/Release/v142/dynamic/libsodium.dll .
           curl -LO https://aka.ms/vs/16/release/vc_redist.x64.exe
 
       - name: Zip
-        working-directory: ./LANDrop
-        run: Compress-Archive LANDrop LANDrop-win.zip
+        working-directory: ./WireHop
+        run: Compress-Archive WireHop WireHop-win.zip
 
       - name: Upload
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v7
         with:
           name: Windows-Build
-          path: LANDrop/LANDrop-win.zip
+          path: WireHop/WireHop-win.zip
 
   package_macos:
     name: macOS Package
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
 
       - name: Install libsodium
         run: brew install libsodium
 
       - name: Build
-        working-directory: ./LANDrop
-        run: qmake && make -j$(nproc)
+        working-directory: ./WireHop
+        run: qmake && make -j$(sysctl -n hw.ncpu)
 
       - name: Package
-        working-directory: ./LANDrop
+        working-directory: ./WireHop
         run: |
-          macdeployqt LANDrop.app
-          zip -r9 --symlinks LANDrop-macos.zip LANDrop.app
+          macdeployqt WireHop.app
+          zip -r9 --symlinks WireHop-macos.zip WireHop.app
 
       - name: Upload
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v7
         with:
           name: macOS-Build
-          path: LANDrop/LANDrop-macos.zip
+          path: WireHop/WireHop-macos.zip

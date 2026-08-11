@@ -159,7 +159,7 @@ void FileTransferPolicyTest::exchangesEncryptedMessages()
 
     QCOMPARE(sender.sessionKeyDigest(), receiver.sessionKeyDigest());
     QCOMPARE(receiver.decrypt(sender.encrypt(QByteArray())), QByteArray());
-    QCOMPARE(receiver.decrypt(sender.encrypt("hello LANDrop")), QByteArray("hello LANDrop"));
+    QCOMPARE(receiver.decrypt(sender.encrypt("hello WireHop")), QByteArray("hello WireHop"));
     QCOMPARE(Crypto::encryptedOverhead(), Q_UINT64_C(28));
 }
 

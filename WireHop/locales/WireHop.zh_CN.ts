@@ -5,22 +5,25 @@
     <name>AboutDialog</name>
     <message>
         <location filename="../aboutdialog.ui" line="17"/>
+        <location filename="../../wirehop/aboutdialog.ui" line="17"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
     <message>
         <location filename="../aboutdialog.ui" line="23"/>
+        <location filename="../../wirehop/aboutdialog.ui" line="23"/>
         <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;Sans Serif&apos;; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:12pt; font-weight:600;&quot;&gt;%1 %2&lt;/span&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Drop any files to any devices on your LAN.&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Files, one hop away.&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;WireHop modifications Copyright (c) 2026, WireHop contributors.&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;BSD 3-Clause License&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Copyright (c) 2021, %3&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Copyright (c) 2021, LANDrop&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;All rights reserved.&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:&lt;/p&gt;
@@ -32,10 +35,6 @@ p, li { white-space: pre-wrap; }
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &amp;quot;AS IS&amp;quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.&lt;/p&gt;
-&lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt; font-weight:600;&quot;&gt;LANDrop Icon&lt;/span&gt;&lt;/p&gt;
-&lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License. To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
 &lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:12pt; font-weight:600;&quot;&gt;3rd Party Software &amp;amp; Artwork&lt;/span&gt;&lt;/p&gt;
@@ -58,10 +57,11 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;http://www.apache.org/licenses/LICENSE-2.0&lt;/p&gt;
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an &amp;quot;AS IS&amp;quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../aboutdialog.ui" line="77"/>
+        <location filename="../aboutdialog.ui" line="74"/>
+        <location filename="../../wirehop/aboutdialog.ui" line="74"/>
         <source>About Qt</source>
         <translation>关于 Qt</translation>
     </message>
@@ -118,28 +118,29 @@ Your device won&apos;t be discoverable.</source>
     <name>FileTransferDialog</name>
     <message>
         <location filename="../filetransferdialog.ui" line="14"/>
+        <location filename="../../wirehop/filetransferdialog.ui" line="14"/>
         <source>Transferring</source>
         <translation>正在传输</translation>
     </message>
     <message>
-        <location filename="../filetransferdialog.cpp" line="97"/>
+        <location filename="../filetransferdialog.cpp" line="98"/>
         <source>%1 would like to share a file &quot;%2&quot; of size %3.</source>
         <translation>%1 想要分享一个大小为 %3 的文件 &quot;%2&quot;。</translation>
     </message>
     <message>
-        <location filename="../filetransferdialog.cpp" line="100"/>
+        <location filename="../filetransferdialog.cpp" line="101"/>
         <source>%1 would like to share %2 files of total size %3.</source>
         <translation>%1 想要分享总大小为 %3 的 %2 个文件。</translation>
     </message>
     <message>
-        <location filename="../filetransferdialog.cpp" line="103"/>
+        <location filename="../filetransferdialog.cpp" line="104"/>
         <source>
 Confirm that the code &quot;%1&quot; is shown on the sending device.</source>
         <translation>
 请确认发送设备上显示了验证码 &quot;%1&quot;。</translation>
     </message>
     <message>
-        <location filename="../filetransferdialog.cpp" line="104"/>
+        <location filename="../filetransferdialog.cpp" line="105"/>
         <source>
 Would you like to receive it?</source>
         <translation>
@@ -325,7 +326,7 @@ Would you like to receive it?</source>
 <context>
     <name>Main</name>
     <message>
-        <location filename="../main.cpp" line="58"/>
+        <location filename="../main.cpp" line="61"/>
         <source>Your system needs to support tray icon.</source>
         <translation>你的系统需要支持托盘图标。</translation>
     </message>
@@ -334,22 +335,26 @@ Would you like to receive it?</source>
     <name>SelectFilesDialog</name>
     <message>
         <location filename="../selectfilesdialog.ui" line="17"/>
+        <location filename="../../wirehop/selectfilesdialog.ui" line="17"/>
         <location filename="../selectfilesdialog.cpp" line="95"/>
         <source>Select File(s) to be Sent</source>
         <translation>请选择想要发送的文件</translation>
     </message>
     <message>
         <location filename="../selectfilesdialog.ui" line="23"/>
+        <location filename="../../wirehop/selectfilesdialog.ui" line="23"/>
         <source>You can drag files to this window:</source>
         <translation>你可以拖拽文件至此窗口：</translation>
     </message>
     <message>
         <location filename="../selectfilesdialog.ui" line="42"/>
+        <location filename="../../wirehop/selectfilesdialog.ui" line="42"/>
         <source>Add...</source>
         <translation>添加...</translation>
     </message>
     <message>
         <location filename="../selectfilesdialog.ui" line="49"/>
+        <location filename="../../wirehop/selectfilesdialog.ui" line="49"/>
         <source>Remove</source>
         <translation>移除</translation>
     </message>
@@ -383,21 +388,25 @@ Would you like to receive it?</source>
     <name>SendToDialog</name>
     <message>
         <location filename="../sendtodialog.ui" line="14"/>
+        <location filename="../../wirehop/sendtodialog.ui" line="14"/>
         <source>Send to</source>
         <translation>发送给</translation>
     </message>
     <message>
         <location filename="../sendtodialog.ui" line="25"/>
+        <location filename="../../wirehop/sendtodialog.ui" line="25"/>
         <source>Address</source>
         <translation>地址</translation>
     </message>
     <message>
         <location filename="../sendtodialog.ui" line="32"/>
+        <location filename="../../wirehop/sendtodialog.ui" line="32"/>
         <source>:</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../sendtodialog.ui" line="45"/>
+        <location filename="../../wirehop/sendtodialog.ui" line="45"/>
         <source>Port</source>
         <translation>端口</translation>
     </message>
@@ -426,51 +435,61 @@ Would you like to receive it?</source>
     <name>SettingsDialog</name>
     <message>
         <location filename="../settingsdialog.ui" line="14"/>
+        <location filename="../../wirehop/settingsdialog.ui" line="14"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
         <location filename="../settingsdialog.ui" line="20"/>
+        <location filename="../../wirehop/settingsdialog.ui" line="20"/>
         <source>Basic</source>
         <translation>基础</translation>
     </message>
     <message>
         <location filename="../settingsdialog.ui" line="26"/>
+        <location filename="../../wirehop/settingsdialog.ui" line="26"/>
         <source>Device Name</source>
         <translation>设备名</translation>
     </message>
     <message>
         <location filename="../settingsdialog.ui" line="40"/>
+        <location filename="../../wirehop/settingsdialog.ui" line="40"/>
         <source>Download Path</source>
         <translation>下载路径</translation>
     </message>
     <message>
         <location filename="../settingsdialog.ui" line="52"/>
+        <location filename="../../wirehop/settingsdialog.ui" line="52"/>
         <source>...</source>
         <translation></translation>
     </message>
     <message>
         <location filename="../settingsdialog.ui" line="61"/>
+        <location filename="../../wirehop/settingsdialog.ui" line="61"/>
         <source>Discoverable</source>
         <translation>可被发现</translation>
     </message>
     <message>
         <location filename="../settingsdialog.ui" line="75"/>
+        <location filename="../../wirehop/settingsdialog.ui" line="75"/>
         <source>Check for Updates</source>
         <translation>检查更新</translation>
     </message>
     <message>
         <location filename="../settingsdialog.ui" line="82"/>
+        <location filename="../../wirehop/settingsdialog.ui" line="82"/>
         <source>Check</source>
         <translation>检查</translation>
     </message>
     <message>
         <location filename="../settingsdialog.ui" line="92"/>
+        <location filename="../../wirehop/settingsdialog.ui" line="92"/>
         <source>Advanced</source>
         <translation>高级</translation>
     </message>
     <message>
         <location filename="../settingsdialog.ui" line="98"/>
+        <location filename="../../wirehop/settingsdialog.ui" line="98"/>
         <source>Server Port</source>
         <translation>服务器端口</translation>
     </message>
@@ -501,12 +520,12 @@ Would you like to receive it?</source>
         <translation>检查最新版本失败。</translation>
     </message>
     <message>
-        <location filename="../settingsdialog.cpp" line="114"/>
+        <location filename="../settingsdialog.cpp" line="116"/>
         <source>There is a new version %1! Do you want to update?</source>
         <translation>发现新版本 %1！你想要更新吗？</translation>
     </message>
     <message>
-        <location filename="../settingsdialog.cpp" line="120"/>
+        <location filename="../settingsdialog.cpp" line="123"/>
         <source>You have the latest version!</source>
         <translation>你已经安装了最新版本！</translation>
     </message>

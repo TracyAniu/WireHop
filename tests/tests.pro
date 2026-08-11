@@ -5,18 +5,18 @@ CONFIG += console testcase c++11
 CONFIG -= app_bundle
 
 TEMPLATE = app
-TARGET = landrop_tests
+TARGET = wirehop_tests
 
-INCLUDEPATH += ../LANDrop
+INCLUDEPATH += ../WireHop
 
 SOURCES += \
     tst_filetransferpolicy.cpp \
-    ../LANDrop/crypto.cpp \
-    ../LANDrop/filetransferpolicy.cpp
+    ../WireHop/crypto.cpp \
+    ../WireHop/filetransferpolicy.cpp
 
 HEADERS += \
-    ../LANDrop/crypto.h \
-    ../LANDrop/filetransferpolicy.h
+    ../WireHop/crypto.h \
+    ../WireHop/filetransferpolicy.h
 
 unix {
     INCLUDEPATH += /usr/local/include

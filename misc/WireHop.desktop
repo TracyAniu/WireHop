@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=WireHop
+Comment=Files, one hop away.
+Exec=wirehop
+Icon=wirehop
+Terminal=false
+Type=Application
+Categories=Network;FileTransfer;Utility;

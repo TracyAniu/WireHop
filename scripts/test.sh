@@ -4,11 +4,11 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 source "$SCRIPT_DIR/_common.sh"
 
-TEST_BUILD_DIR=${LANDROP_TEST_BUILD_DIR:-"$REPO_ROOT/build-agent-tests"}
+TEST_BUILD_DIR=${WIREHOP_TEST_BUILD_DIR:-${LANDROP_TEST_BUILD_DIR:-"$REPO_ROOT/build-agent-tests"}}
 qmake_bin=$(find_qmake)
 qt_version=$("$qmake_bin" -query QT_VERSION)
 if [[ "$qt_version" != 5.* ]]; then
-    echo "LANDrop's reference tests require Qt 5; $qmake_bin reports Qt $qt_version." >&2
+    echo "WireHop's reference tests require Qt 5; $qmake_bin reports Qt $qt_version." >&2
     exit 2
 fi
 
@@ -21,4 +21,4 @@ if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists libsodium; then
 fi
 (cd "$TEST_BUILD_DIR" && "$qmake_bin" "${qmake_args[@]}")
 make -C "$TEST_BUILD_DIR" -j"$(build_jobs)"
-"$TEST_BUILD_DIR/landrop_tests" -txt
+"$TEST_BUILD_DIR/wirehop_tests" -txt

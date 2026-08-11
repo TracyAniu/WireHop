@@ -36,6 +36,7 @@
 
 class Settings {
 public:
+    static void migrateLegacySettings();
     static QString deviceName();
     static QString downloadPath();
     static bool discoverable();

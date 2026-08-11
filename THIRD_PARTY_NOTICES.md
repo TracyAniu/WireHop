@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-This source distribution is derived from LANDrop 0.4.0 and uses third-party software and artwork. The notices below do not replace the complete license texts shipped with a binary distribution.
+WireHop is derived from LANDrop 0.4.0 and uses third-party software and artwork. The notices below do not replace the complete license texts shipped with a binary distribution.
 
 ## LANDrop source code
 
@@ -8,11 +8,11 @@ Copyright (c) 2021, LANDrop. All rights reserved.
 
 Licensed under the BSD 3-Clause License. See `LICENSE` for the complete terms and disclaimer. Neither the LANDrop name nor contributor names may be used to endorse or promote a derived product without prior written permission.
 
-## LANDrop icon and branded artwork
+## WireHop artwork
 
-The upstream LANDrop icon is identified by the project as Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International material. See `LICENSE.icon` for the complete terms.
+The WireHop application icon, mask, and banner are original replacement artwork created for this project and distributed under the BSD 3-Clause License in `LICENSE`.
 
-That icon is not suitable for the planned independent open-source release and must be replaced before that release. Do not publish modified versions of it or use it commercially without separate permission from the rights holder. The banner and other LANDrop branding should also be replaced to establish an independent project identity.
+The upstream LANDrop icon and banner are not included in WireHop. The former `LICENSE.icon` file applied only to that removed upstream artwork and is therefore not part of this distribution.
 
 ## Qt
 
@@ -28,4 +28,4 @@ libsodium is distributed under the ISC License. Permission to use, copy, modify,
 
 ## Material Design Icons
 
-Some upstream tray/menu artwork is identified in `LANDrop/aboutdialog.ui` as Material Design Icons licensed under the Apache License 2.0. Preserve the applicable Apache 2.0 license and attribution for any such artwork retained in a release, or replace the artwork before release.
+Some retained tray/menu artwork is identified in `WireHop/aboutdialog.ui` as Material Design Icons licensed under the Apache License 2.0. Preserve the applicable Apache 2.0 license and attribution in a release, or replace the artwork before release.

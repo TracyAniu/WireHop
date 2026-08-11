@@ -200,7 +200,7 @@ void FileTransferReceiver::processReceivedData(const QByteArray &data)
 
 bool FileTransferReceiver::createCurrentTempFile()
 {
-    writingFile = new QTemporaryFile(QDir(downloadPath).filePath(".landrop-part-XXXXXX"), this);
+    writingFile = new QTemporaryFile(QDir(downloadPath).filePath(".wirehop-part-XXXXXX"), this);
     writingFile->setAutoRemove(true);
     if (!writingFile->open()) {
         writingFile->deleteLater();

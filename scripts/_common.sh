@@ -3,8 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
-BUILD_DIR=${LANDROP_BUILD_DIR:-"$REPO_ROOT/build-agent"}
-PROJECT_FILE="$REPO_ROOT/LANDrop/LANDrop.pro"
+BUILD_DIR=${WIREHOP_BUILD_DIR:-${LANDROP_BUILD_DIR:-"$REPO_ROOT/build-agent"}}
+PROJECT_FILE="$REPO_ROOT/WireHop/WireHop.pro"
 
 find_qmake() {
     if [[ -n "${QMAKE_BIN:-}" ]]; then
@@ -25,19 +25,19 @@ find_qmake() {
     return 2
 }
 
-configure_landrop() {
+configure_wirehop() {
     local qmake_bin
     qmake_bin=$(find_qmake)
 
     local qt_version
     qt_version=$("$qmake_bin" -query QT_VERSION)
     if [[ "$qt_version" != 5.* ]]; then
-        echo "LANDrop's reference build requires Qt 5; $qmake_bin reports Qt $qt_version." >&2
+        echo "WireHop's reference build requires Qt 5; $qmake_bin reports Qt $qt_version." >&2
         return 2
     fi
 
     if ! command -v make >/dev/null 2>&1; then
-        echo "make was not found. Install a platform build tool before building LANDrop." >&2
+        echo "make was not found. Install a platform build tool before building WireHop." >&2
         return 2
     fi
 
@@ -55,7 +55,7 @@ configure_landrop() {
 }
 
 build_jobs() {
-    local jobs=${LANDROP_JOBS:-}
+    local jobs=${WIREHOP_JOBS:-${LANDROP_JOBS:-}}
     if [[ -z "$jobs" ]]; then
         if command -v nproc >/dev/null 2>&1; then
             jobs=$(nproc)
@@ -69,8 +69,8 @@ build_jobs() {
     printf '%s\n' "$jobs"
 }
 
-build_landrop() {
-    configure_landrop
+build_wirehop() {
+    configure_wirehop
 
     local jobs
     jobs=$(build_jobs)
@@ -78,11 +78,11 @@ build_landrop() {
     make -C "$BUILD_DIR" -j"$jobs"
 }
 
-landrop_binary() {
+wirehop_binary() {
     local candidates=(
-        "$BUILD_DIR/LANDrop.app/Contents/MacOS/LANDrop"
-        "$BUILD_DIR/LANDrop"
-        "$BUILD_DIR/landrop"
+        "$BUILD_DIR/WireHop.app/Contents/MacOS/WireHop"
+        "$BUILD_DIR/WireHop"
+        "$BUILD_DIR/wirehop"
     )
     local candidate
     for candidate in "${candidates[@]}"; do
@@ -92,6 +92,6 @@ landrop_binary() {
         fi
     done
 
-    echo "The LANDrop executable was not found under $BUILD_DIR after a successful build." >&2
+    echo "The WireHop executable was not found under $BUILD_DIR after a successful build." >&2
     return 1
 }

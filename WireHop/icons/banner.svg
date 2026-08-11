@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">WireHop</title>
+  <desc id="desc">WireHop logo with the tagline Files, one hop away.</desc>
+  <rect width="1200" height="360" rx="56" fill="#071a3d"/>
+  <g transform="translate(54 32) scale(.29)">
+    <path d="M220 654C306 286 410 286 512 668C614 286 718 286 804 654"
+          fill="none" stroke="#18c7ff" stroke-width="82" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="130" y="610" width="188" height="206" rx="58" fill="#18c7ff"/>
+    <rect x="706" y="610" width="188" height="206" rx="58" fill="#18c7ff"/>
+    <g transform="rotate(-18 512 238)" fill="#ff654f">
+      <rect x="485" y="204" width="126" height="68" rx="34"/>
+      <rect x="422" y="218" width="50" height="18" rx="9"/>
+      <rect x="444" y="252" width="74" height="18" rx="9"/>
+    </g>
+  </g>
+  <text x="390" y="178" fill="#f7fbff" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
+        font-size="112" font-weight="700" letter-spacing="-3">WireHop</text>
+  <text x="397" y="245" fill="#8adfff" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
+        font-size="34" font-weight="500" letter-spacing="1">Files, one hop away.</text>
+</svg>

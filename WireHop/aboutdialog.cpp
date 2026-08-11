@@ -39,8 +39,7 @@ AboutDialog::AboutDialog(QWidget *parent) : QDialog(parent), ui(new Ui::AboutDia
     setWindowFlag(Qt::WindowStaysOnTopHint);
     ui->aboutText->setHtml(
                 ui->aboutText->toHtml().arg(QApplication::applicationName(),
-                                            QApplication::applicationVersion(),
-                                            QApplication::organizationName()));
+                                            QApplication::applicationVersion()));
     connect(ui->aboutQtButton, &QPushButton::clicked, this, &AboutDialog::aboutQtButtonClicked);
 }
 

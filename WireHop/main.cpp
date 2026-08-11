@@ -30,53 +30,43 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "settings.h"
+#include <stdexcept>
 
 #include <QApplication>
-#include <QDir>
-#include <QHostInfo>
-#include <QSettings>
-#include <QStandardPaths>
+#include <QMessageBox>
+#include <QTranslator>
 
-QString Settings::deviceName()
-{
-    QString d = QHostInfo::localHostName();
-    return QSettings().value("deviceName", d).toString();
-}
+#include "settings.h"
+#include "trayicon.h"
 
-QString Settings::downloadPath()
+int main(int argc, char *argv[])
 {
-    QString d = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-    d += QDir::separator() + QApplication::applicationName();
-    return QSettings().value("downloadPath", d).toString();
-}
+    QApplication a(argc, argv);
 
-bool Settings::discoverable()
-{
-    return QSettings().value("discoverable", true).toBool();
-}
+    a.setOrganizationName("WireHop");
+    a.setOrganizationDomain("tracyaniu.github.io");
+    a.setApplicationName("WireHop");
+    a.setApplicationVersion("0.1.0");
 
-quint16 Settings::serverPort()
-{
-    return QSettings().value("serverPort", 0u).toUInt();
-}
+    Settings::migrateLegacySettings();
 
-void Settings::setDeviceName(const QString &deviceName)
-{
-    QSettings().setValue("deviceName", deviceName);
-}
+    a.setQuitOnLastWindowClosed(false);
 
-void Settings::setDownloadPath(const QString &downloadPath)
-{
-    QSettings().setValue("downloadPath", downloadPath);
-}
+    QTranslator appTranslator;
+    appTranslator.load(a.applicationName() + '.' + QLocale::system().name(), ":/locales", "", ".qm");
+    a.installTranslator(&appTranslator);
 
-void Settings::setDiscoverable(bool discoverable)
-{
-    QSettings().setValue("discoverable", discoverable);
-}
+    try {
+        if (!QSystemTrayIcon::isSystemTrayAvailable())
+            throw std::runtime_error(a.translate("Main", "Your system needs to support tray icon.")
+                                     .toUtf8().toStdString());
 
-void Settings::setServerPort(quint16 serverPort)
-{
-    QSettings().setValue("serverPort", serverPort);
+        TrayIcon t;
+        t.show();
+
+        return a.exec();
+    } catch (const std::exception &e) {
+        QMessageBox::critical(nullptr, QApplication::applicationName(), e.what());
+        return 1;
+    }
 }

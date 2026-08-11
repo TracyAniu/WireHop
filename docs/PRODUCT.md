@@ -2,9 +2,9 @@
 
 ## Purpose
 
-LANDrop is a cross-platform desktop utility for sending files directly between devices on the same local network. This repository contains the C++/Qt desktop application identified as version 0.4.0 in `LANDrop/main.cpp`.
+WireHop is a cross-platform desktop utility for sending files directly between devices on the same local network. This repository contains the independently branded C++/Qt desktop application identified as version 0.1.0 in `WireHop/main.cpp`.
 
-The root README explicitly says this source snapshot does not reflect the latest LANDrop releases. Treat the repository as the authority for work on this codebase, not as documentation of the current hosted product.
+WireHop is derived from the open-source LANDrop 0.4.0 snapshot. Treat this repository as the authority for WireHop behavior, not as documentation of later LANDrop products.
 
 ## Target Users
 
@@ -13,7 +13,7 @@ The root README explicitly says this source snapshot does not reflect the latest
 
 ## Core Workflows
 
-1. Launch LANDrop and keep it available from the system tray.
+1. Launch WireHop and keep it available from the system tray.
 2. Select or drag in one or more regular files, discover a peer or enter its address and port, and start a transfer.
 3. On the receiving device, review the sender, file summary, total size, and six-digit session code, then accept or reject the transfer.
 4. Configure the device name, download directory, discoverability, and listening port.
@@ -32,7 +32,7 @@ The root README explicitly says this source snapshot does not reflect the latest
 - Cloud storage, relays, user accounts, or Internet-based device discovery.
 - File compression or media transcoding.
 - Background update installation; the application only checks a remote version document and opens the download website.
-- Claims about features in newer closed-source LANDrop releases.
+- Claims about features in later LANDrop releases.
 
 ## Product Principles
 

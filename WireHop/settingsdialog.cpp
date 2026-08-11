@@ -102,18 +102,21 @@ void SettingsDialog::checkForUpdatesButtonClicked()
                 throw std::runtime_error(tr("Failed to get latest version.").toUtf8().toStdString());
 
             QJsonObject obj = json.object();
-            QJsonValue verJson = obj.value("desktop");
+            QJsonValue verJson = obj.value("tag_name");
             if (!verJson.isString())
                 throw std::runtime_error(tr("Failed to get latest version.").toUtf8().toStdString());
 
             QString version = verJson.toString();
+            if (version.startsWith('v'))
+                version.remove(0, 1);
             QVersionNumber curVersion = QVersionNumber::fromString(QApplication::applicationVersion());
             QVersionNumber latestVersion = QVersionNumber::fromString(version);
             if (latestVersion > curVersion) {
                 if (QMessageBox::question(this, QApplication::applicationName(),
                                           tr("There is a new version %1! Do you want to update?").arg(version))
                         == QMessageBox::Yes) {
-                    QDesktopServices::openUrl(QUrl::fromEncoded("https://landrop.app/#downloads"));
+                    QDesktopServices::openUrl(
+                                QUrl::fromEncoded("https://github.com/TracyAniu/WireHop/releases/latest"));
                 }
             } else {
                 QMessageBox::information(this, QApplication::applicationName(),
@@ -125,7 +128,10 @@ void SettingsDialog::checkForUpdatesButtonClicked()
         manager->deleteLater();
         ui->checkForUpdatesButton->setEnabled(true);
     });
-    QNetworkRequest request(QUrl("https://releases.landrop.app/versions.json"));
+    QNetworkRequest request(
+                QUrl("https://api.github.com/repos/TracyAniu/WireHop/releases/latest"));
+    request.setHeader(QNetworkRequest::UserAgentHeader,
+                      QString("WireHop/%1").arg(QApplication::applicationVersion()));
     ui->checkForUpdatesButton->setEnabled(false);
     manager->get(request);
 }

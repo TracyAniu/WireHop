@@ -1,54 +1,61 @@
-# Note: This repository does not reflect the latest LANDrop releases. We decided to temporarily close source LANDrop and we might re-open source it in the future. Thanks for your understanding!
+# WireHop
 
-## Fork and redistribution status
+<img src="WireHop/icons/banner.png" width="460" alt="WireHop — Files, one hop away.">
 
-The source code in this snapshot is available under the BSD 3-Clause License and may be modified and redistributed subject to `LICENSE`. The LANDrop icon has separate CC BY-NC-ND 4.0 terms in `LICENSE.icon`; an independent public fork should replace it, the banner, and other LANDrop branding, then choose its own project identity before publishing release binaries.
+[![Package](https://github.com/TracyAniu/WireHop/actions/workflows/package.yml/badge.svg)](https://github.com/TracyAniu/WireHop/actions/workflows/package.yml)
 
-See `THIRD_PARTY_NOTICES.md` for the source-distribution notices currently identified. Binary releases also need the complete license texts and notices for the exact Qt, libsodium, and retained artwork packages they ship.
+WireHop is a cross-platform desktop utility for sending files directly between devices on the same local network. It uses direct encrypted connections, requires receiver approval, and does not route file contents through a cloud service.
 
-<img src="LANDrop/icons/banner.png" width="300">
-
-![Package](https://github.com/LANDrop/LANDrop/workflows/Package/badge.svg)
-
-> Drop any files to any devices on your LAN. No need to use instant messaging for that anymore.
-
-LANDrop is a cross-platform tool that you can use to conveniently transfer photos, videos, and other types of files to other devices on the same local network.
-
-You can download prebuilts of LANDrop from the [official website](https://landrop.app/#downloads).
+WireHop 0.1.0 is an independently maintained fork derived from the open-source LANDrop 0.4.0 snapshot. It has its own name, application identifiers, release channel, and original artwork. The transfer wire protocol is intentionally unchanged for compatibility with that snapshot.
 
 ## Features
 
-- Cross platform: when we say it, we mean it. iOS, Android, macOS, Windows, Linux, name yours.
-- Ultra fast: uses your local network for transferring. Internet speed is not a limit.
-- Easy to use: intuitive UI. You know how to use it when you see it.
-- Secure: uses state-of-the-art cryptography algorithm. No one else can see your files.
-- No cellular data: outside? No problem. LANDrop can work on your personal hotspot, without consuming cellular data.
-- No compression: doesn't compress your photos and videos when sending.
+- Direct local-network file transfer over TCP.
+- UDP peer discovery plus manual address entry.
+- Authenticated encryption using libsodium.
+- Receiver approval and a six-digit session code for peer comparison.
+- Collision-safe receiving that does not overwrite existing files.
+- System-tray workflow on Linux, macOS, and Windows.
+- Simplified Chinese localization.
 
-## Building
+## Build
 
-The AppImage we provide as the prebuilt for Linux might not work on your machine. You can build LANDrop by yourself if the prebuilt doesn't work for you.
+WireHop requires Qt 5, a C++11 toolchain, qmake, make, and libsodium development files.
 
-To build LANDrop:
+```sh
+git clone git@github.com:TracyAniu/WireHop.git
+cd WireHop
+./scripts/typecheck.sh
+```
 
-1. Download and install the dependencies: [Qt](https://www.qt.io/download-qt-installer) and [libsodium](https://libsodium.gitbook.io/doc/#downloading-libsodium)  
-    If you are using a Debian-based distro, such as Ubuntu, you can install libsodium via
-    ```
-    sudo apt install libsodium-dev
-    ```
-2. Clone this repository
-    ```
-    git clone https://github.com/LANDrop/LANDrop
-    ```
-3. Run the following commands
-    ```
-    mkdir -p LANDrop/build
-    cd LANDrop/build
-    qmake ../LANDrop
-    make -j$(nproc)
-    sudo make install
-    ```
-4. You can now run LANDrop via
-    ```
-    landrop
-    ```
+Run it locally with:
+
+```sh
+./scripts/dev.sh
+```
+
+On a Debian-based Linux system, install libsodium with `sudo apt install libsodium-dev`. You can also build directly with qmake:
+
+```sh
+mkdir build
+cd build
+qmake ../WireHop/WireHop.pro
+make -j2
+```
+
+## Validation
+
+```sh
+./scripts/lint.sh
+./scripts/test.sh
+./scripts/typecheck.sh
+./scripts/smoke.sh
+```
+
+See `docs/TESTING.md` for manual peer-transfer and platform checks.
+
+## License and attribution
+
+The source code and original WireHop artwork are distributed under the BSD 3-Clause License in `LICENSE`. WireHop retains the required LANDrop copyright and license notice because it is a derivative of LANDrop 0.4.0. See `THIRD_PARTY_NOTICES.md` for Qt, libsodium, retained Material Design Icons, and upstream attribution.
+
+Before publishing binaries, include the license texts and notices required by the exact Qt and other dependency packages bundled in those binaries. Signing, notarization, and store-specific requirements are separate release tasks.

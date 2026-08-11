@@ -2,25 +2,25 @@
 
 ## Overview
 
-LANDrop is a single-process Qt Widgets application. `main.cpp` creates the application and a `TrayIcon`; the tray object owns the long-lived TCP server, UDP discovery service, settings/about dialogs, and menu. Short-lived dialogs and transfer-session objects handle outbound and inbound transfers through Qt signals and slots.
+WireHop is a single-process Qt Widgets application. `main.cpp` creates the application and a `TrayIcon`; the tray object owns the long-lived TCP server, UDP discovery service, settings/about dialogs, and menu. Short-lived dialogs and transfer-session objects handle outbound and inbound transfers through Qt signals and slots.
 
 ## Tech Stack
 
 - Language: C++11.
 - UI/runtime: Qt 5 Core, Gui, Widgets, and Network modules.
-- Build system: qmake project at `LANDrop/LANDrop.pro`, then platform `make` or Visual Studio tooling.
+- Build system: qmake project at `WireHop/WireHop.pro`, then platform `make` or Visual Studio tooling.
 - Cryptography: libsodium scalar multiplication and ChaCha20-Poly1305 IETF authenticated encryption.
 - Persistence: platform-native `QSettings`; received files are written to the configured download directory.
 - Localization: Qt `.ts`/`.qm` resources; Simplified Chinese is currently present.
-- CI: GitHub Actions packaging jobs for Linux, Windows, and macOS. There is no automated test job.
+- CI: GitHub Actions packaging jobs for Linux, Windows, and macOS.
 
 ## Directory Map
 
 | Path | Responsibility |
 | --- | --- |
-| `LANDrop/` | Application C++ sources, headers, qmake project, UI forms, resources, and platform metadata. |
-| `LANDrop/icons/` | Tray, dialog, and packaging artwork. |
-| `LANDrop/locales/` | Qt translation source and compiled catalog. |
+| `WireHop/` | Application C++ sources, headers, qmake project, UI forms, resources, and platform metadata. |
+| `WireHop/icons/` | Tray, dialog, and packaging artwork. |
+| `WireHop/locales/` | Qt translation source and compiled catalog. |
 | `misc/` | Linux desktop entry used during installation/packaging. |
 | `.github/workflows/` | Cross-platform packaging and manual artifact cleanup. |
 | `docs/` | Product, architecture, standards, security, testing, decisions, and task state. |
@@ -65,7 +65,7 @@ LANDrop is a single-process Qt Widgets application. `main.cpp` creates the appli
 - Keep network ownership explicit through QObject parenting and preserve asynchronous event-loop behavior.
 - Do not add a second settings mechanism or bypass `Settings` for persisted application preferences.
 - Preserve protocol framing and peer compatibility unless the task explicitly includes a versioning/migration design.
-- Add external libraries through `LANDrop/LANDrop.pro` and document platform packaging implications.
+- Add external libraries through `WireHop/WireHop.pro` and document platform packaging implications.
 
 ## External Interfaces
 
@@ -73,9 +73,11 @@ LANDrop is a single-process Qt Widgets application. `main.cpp` creates the appli
 | --- | --- | --- |
 | Local UDP port 52637 | Peer discovery request/advertisement JSON. | `DiscoveryService` |
 | Local TCP listener | Key exchange, approval metadata, and encrypted file stream. | `FileTransferServer` / transfer sessions |
-| `https://releases.landrop.app/versions.json` | Manual update version check. | `SettingsDialog` |
-| `https://landrop.app/#downloads` | Browser destination when an update is accepted. | `SettingsDialog` |
+| GitHub Releases API for `TracyAniu/WireHop` | Manual update version check using the latest release tag. | `SettingsDialog` |
+| Latest WireHop GitHub release | Browser destination when an update is accepted. | `SettingsDialog` |
 | Platform settings store | Device name, download path, discoverability, server port. | `Settings` |
+
+On first launch, `Settings` copies compatible preferences from the legacy `LANDrop` / `LANDrop` settings namespace when the corresponding WireHop key is absent. The migration is marked complete and is not repeated.
 
 ## Known Tradeoffs and Risks
 

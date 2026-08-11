@@ -15,9 +15,9 @@
 | `./scripts/typecheck.sh` | Performs the closest available static check by compiling all application sources. |
 | `./scripts/lint.sh` | Checks harness shell syntax, `features.json`, trailing whitespace, and `git diff --check`. |
 | `./scripts/test.sh` | Builds and runs the Qt Test suite for filename/size policy, collision-safe commits, and cryptographic input handling. |
-| `./scripts/smoke.sh` | Compiles, starts LANDrop, and verifies the process remains alive for a short interval. |
+| `./scripts/smoke.sh` | Compiles, starts WireHop, and verifies the process remains alive for a short interval. |
 
-Application build artifacts default to the ignored `build-agent/` directory and test artifacts to `build-agent-tests/`. `LANDROP_BUILD_DIR`, `LANDROP_TEST_BUILD_DIR`, `QMAKE_BIN`, `LANDROP_JOBS`, and `LANDROP_SMOKE_SECONDS` are supported overrides.
+Application build artifacts default to the ignored `build-agent/` directory and test artifacts to `build-agent-tests/`. `WIREHOP_BUILD_DIR`, `WIREHOP_TEST_BUILD_DIR`, `QMAKE_BIN`, `WIREHOP_JOBS`, and `WIREHOP_SMOKE_SECONDS` are supported overrides. The corresponding legacy `LANDROP_*` names remain accepted as fallbacks.
 
 ## Current Strategy
 
