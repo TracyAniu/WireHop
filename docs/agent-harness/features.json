@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "purpose": "Track end-to-end feature readiness only for future multi-feature or long-running work.",
+  "status_values": [
+    "failing",
+    "passing",
+    "blocked"
+  ],
+  "passing_rule": "A feature may be passing only after its user path or integration validation succeeds; compilation or code inspection alone is insufficient.",
+  "feature_item_schema": {
+    "id": "short-stable-id",
+    "title": "User-visible feature or critical workflow",
+    "user_path": "How a user or system exercises this feature",
+    "acceptance": [
+      "Observable acceptance criterion"
+    ],
+    "validation": [
+      "Command or manual path with environment details"
+    ],
+    "status": "failing",
+    "notes": "Concise current state and evidence"
+  },
+  "features": []
+}
