@@ -46,7 +46,7 @@ The harness was committed separately as `af7441e`. The upstream product name and
 - [x] Add and wire a Qt Test target through `scripts/test.sh`.
 - [x] Add third-party notices and update architecture, security, testing, and progress docs.
 - [x] Run lint, tests, compilation, native startup smoke, and a fresh adversarial source-review pass.
-- [ ] Commit the validated hardening change separately from the harness.
+- [x] Commit the validated hardening change separately from the harness.
 
 ## Validation
 
@@ -60,6 +60,7 @@ The harness was committed separately as `af7441e`. The upstream product name and
 
 - 2026-08-11: Harness committed as `af7441e`; plan created and implementation started.
 - 2026-08-11: Added receive-path, overwrite, size, framing, crypto-input, socket-buffer, free-space, and plain-text prompt protections. All 24 Qt tests, lint, a full macOS arm64 build, and native startup smoke passed.
+- 2026-08-11: Validated hardening committed separately as `2ddf46c`.
 
 ## Open Questions
 
@@ -67,6 +68,6 @@ The harness was committed separately as `af7441e`. The upstream product name and
 
 ## Completion Notes
 
-Implementation and local validation are complete; the hardening commit is pending. Existing files are preserved, completed receives use collision-safe names, and the active partial file is automatically removed on session destruction.
+Implementation and local validation are complete in `2ddf46c`. Existing files are preserved, completed receives use collision-safe names, and the active partial file is automatically removed on session destruction.
 
 Not verified in this environment: a real two-peer transfer, interruption behavior observed end to end, Windows/Linux builds and packaging, or a human security review. The protocol still lacks an explicit version, connection/inactivity limits remain follow-up hardening, and rebranding/release identity work remains blocked on the new name and artwork.
