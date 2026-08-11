@@ -1,5 +1,11 @@
 # Note: This repository does not reflect the latest LANDrop releases. We decided to temporarily close source LANDrop and we might re-open source it in the future. Thanks for your understanding!
 
+## Fork and redistribution status
+
+The source code in this snapshot is available under the BSD 3-Clause License and may be modified and redistributed subject to `LICENSE`. The LANDrop icon has separate CC BY-NC-ND 4.0 terms in `LICENSE.icon`; an independent public fork should replace it, the banner, and other LANDrop branding, then choose its own project identity before publishing release binaries.
+
+See `THIRD_PARTY_NOTICES.md` for the source-distribution notices currently identified. Binary releases also need the complete license texts and notices for the exact Qt, libsodium, and retained artwork packages they ship.
+
 <img src="LANDrop/icons/banner.png" width="300">
 
 ![Package](https://github.com/LANDrop/LANDrop/workflows/Package/badge.svg)

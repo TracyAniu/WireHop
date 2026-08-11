@@ -30,6 +30,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <limits>
 #include <stdexcept>
 
 #include "filetransfersession.h"
@@ -38,6 +39,8 @@ FileTransferSession::FileTransferSession(QObject *parent, QTcpSocket *socket) :
     QObject(parent), state(HANDSHAKE1), socket(socket), totalSize(0), transferredSize(0)
 {
     socket->setParent(this);
+    socket->setReadBufferSize(static_cast<qint64>(crypto.publicKeySize()) + 2
+                              + std::numeric_limits<quint16>::max());
     socket->setSocketOption(QAbstractSocket::LowDelayOption, 1);
     connect(socket, &QTcpSocket::readyRead, this, &FileTransferSession::socketReadyRead);
     connect(socket,
@@ -60,13 +63,29 @@ void FileTransferSession::respond(bool)
     throw std::runtime_error("respond not implemented");
 }
 
-void FileTransferSession::encryptAndSend(const QByteArray &data)
+bool FileTransferSession::encryptAndSend(const QByteArray &data)
 {
-    QByteArray sendData = crypto.encrypt(data);
-    quint16 size = sendData.size();
+    const quint64 maximumFrameSize = std::numeric_limits<quint16>::max();
+    if (static_cast<quint64>(data.size()) + Crypto::encryptedOverhead() > maximumFrameSize) {
+        emit errorOccurred(tr("Message exceeds the protocol size limit."));
+        return false;
+    }
+
+    QByteArray sendData;
+    try {
+        sendData = crypto.encrypt(data);
+    } catch (const std::exception &e) {
+        emit errorOccurred(e.what());
+        return false;
+    }
+    quint16 size = static_cast<quint16>(sendData.size());
     sendData.prepend(static_cast<quint8>(size & 0xFF));
     sendData.prepend(static_cast<quint8>((size >> 8) & 0xFF));
-    socket->write(sendData);
+    if (socket->write(sendData) != sendData.size()) {
+        emit errorOccurred(tr("Unable to queue data for sending."));
+        return false;
+    }
+    return true;
 }
 
 void FileTransferSession::handshake1Finished() {}
@@ -76,10 +95,9 @@ void FileTransferSession::socketReadyRead()
     readBuffer += socket->readAll();
 
     if (state == HANDSHAKE1) {
-        if (static_cast<quint64>(readBuffer.size()) < crypto.publicKeySize()) {
-            emit errorOccurred(tr("Handshake failed."));
+        if (static_cast<quint64>(readBuffer.size()) < crypto.publicKeySize())
             return;
-        }
+
         QByteArray publicKey = readBuffer.left(crypto.publicKeySize());
         readBuffer = readBuffer.mid(crypto.publicKeySize());
         try {

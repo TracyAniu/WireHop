@@ -37,6 +37,8 @@
 #include <QTimer>
 
 #include "filetransfersender.h"
+
+#include "filetransferpolicy.h"
 #include "settings.h"
 
 FileTransferSender::FileTransferSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files) :
@@ -54,8 +56,27 @@ FileTransferSender::FileTransferSender(QObject *parent, QTcpSocket *socket, cons
 
 void FileTransferSender::handshake1Finished()
 {
+    if (transferQ.isEmpty() || transferQ.size() > FileTransferPolicy::MAX_FILES_PER_TRANSFER) {
+        emit errorOccurred(tr("The selected file count is invalid."));
+        return;
+    }
+
+    QString deviceName = Settings::deviceName();
+    if (!FileTransferPolicy::isSafeDeviceName(deviceName)) {
+        emit errorOccurred(tr("The configured device name is invalid."));
+        return;
+    }
+
+    quint64 validatedTotalSize = 0;
     QJsonArray jsonFiles;
     foreach (FileMetadata metadata, transferQ) {
+        if (!FileTransferPolicy::isSafeFilename(metadata.filename)
+                || !FileTransferPolicy::canAppendFile(validatedTotalSize, metadata.size)) {
+            emit errorOccurred(tr("A selected file has an unsafe name or unsupported size."));
+            return;
+        }
+        validatedTotalSize += metadata.size;
+
         QJsonObject jsonFile;
         jsonFile.insert("filename", metadata.filename);
         jsonFile.insert("size", static_cast<qint64>(metadata.size));
@@ -63,9 +84,10 @@ void FileTransferSender::handshake1Finished()
     }
 
     QJsonObject obj;
-    obj.insert("device_name", Settings::deviceName());
+    obj.insert("device_name", deviceName);
     obj.insert("device_type", QSysInfo::productType());
     obj.insert("files", jsonFiles);
+    totalSize = validatedTotalSize;
     encryptAndSend(QJsonDocument(obj).toJson(QJsonDocument::Compact));
 }
 
@@ -79,18 +101,19 @@ void FileTransferSender::processReceivedData(const QByteArray &data)
         }
 
         QJsonObject obj = json.object();
-            QJsonValue response = obj.value("response");
-            if (!response.isDouble()) {
-                emit errorOccurred(tr("Handshake failed."));
-                return;
-            }
+        QJsonValue response = obj.value("response");
+        if (!response.isDouble()
+                || (response.toDouble() != 0.0 && response.toDouble() != 1.0)) {
+            emit errorOccurred(tr("Handshake failed."));
+            return;
+        }
 
-            if (response.toInt() == 0) {
-                emit errorOccurred(tr("The receiving device rejected your file(s)."));
-                return;
-            }
-            state = TRANSFERRING;
-            socketBytesWritten();
+        if (response.toInt() == 0) {
+            emit errorOccurred(tr("The receiving device rejected your file(s)."));
+            return;
+        }
+        state = TRANSFERRING;
+        socketBytesWritten();
     }
 }
 
@@ -118,9 +141,15 @@ void FileTransferSender::socketBytesWritten()
     }
     QSharedPointer<QFile> &curFile = files.front();
     FileMetadata &curMetadata = transferQ.front();
-    QByteArray data = curFile->read(TRANSFER_QUANTA);
-    encryptAndSend(data);
-    curMetadata.size -= data.size();
-    transferredSize += data.size();
+    qint64 readSize = static_cast<qint64>(qMin<quint64>(TRANSFER_QUANTA, curMetadata.size));
+    QByteArray data = curFile->read(readSize);
+    if (data.isEmpty() && curMetadata.size > 0) {
+        emit errorOccurred(tr("Unable to read file %1.").arg(curMetadata.filename));
+        return;
+    }
+    if (!encryptAndSend(data))
+        return;
+    curMetadata.size -= static_cast<quint64>(data.size());
+    transferredSize += static_cast<quint64>(data.size());
     emit updateProgress(static_cast<double>(transferredSize) / totalSize);
 }

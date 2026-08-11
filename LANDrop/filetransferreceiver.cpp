@@ -35,9 +35,11 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QStorageInfo>
 #include <QTimer>
 #include <QUrl>
 
+#include "filetransferpolicy.h"
 #include "filetransferreceiver.h"
 #include "settings.h"
 
@@ -46,9 +48,10 @@ FileTransferReceiver::FileTransferReceiver(QObject *parent, QTcpSocket *socket) 
 
 void FileTransferReceiver::respond(bool accepted)
 {
-    QJsonObject obj;
-    obj.insert("response", static_cast<int>(accepted));
-    encryptAndSend(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+    if (state != AWAITING_RESPONSE) {
+        emit errorOccurred(tr("Handshake failed."));
+        return;
+    }
 
     if (accepted) {
         if (!QDir().mkpath(downloadPath)) {
@@ -59,9 +62,25 @@ void FileTransferReceiver::respond(bool accepted)
             emit errorOccurred(tr("Download path is not writable: ") + downloadPath);
             return;
         }
+        QStorageInfo storage(downloadPath);
+        qint64 availableBytes = storage.bytesAvailable();
+        if (storage.isValid() && storage.isReady() && availableBytes >= 0
+                && totalSize > static_cast<quint64>(availableBytes)) {
+            emit errorOccurred(tr("Not enough free space in the download path."));
+            return;
+        }
+    }
+
+    QJsonObject obj;
+    obj.insert("response", static_cast<int>(accepted));
+    if (!encryptAndSend(QJsonDocument(obj).toJson(QJsonDocument::Compact)))
+        return;
+
+    if (accepted) {
         state = TRANSFERRING;
         createNextFile();
     } else {
+        state = FINISHED;
         connect(socket, &QTcpSocket::bytesWritten, this, &FileTransferReceiver::ended);
     }
 }
@@ -69,100 +88,159 @@ void FileTransferReceiver::respond(bool accepted)
 void FileTransferReceiver::processReceivedData(const QByteArray &data)
 {
     if (state == HANDSHAKE2) {
-        QJsonDocument json = QJsonDocument::fromJson(data);
+        QJsonParseError parseError;
+        QJsonDocument json = QJsonDocument::fromJson(data, &parseError);
         if (!json.isObject()) {
-            emit ended();
+            emit errorOccurred(tr("Invalid file metadata."));
             return;
         }
 
         QJsonObject obj = json.object();
         QJsonValue deviceName = obj.value("device_name");
-        if (!deviceName.isString()) {
-            emit ended();
+        if (!deviceName.isString() || !FileTransferPolicy::isSafeDeviceName(deviceName.toString())) {
+            emit errorOccurred(tr("Invalid sender name."));
             return;
         }
 
         QJsonValue filesJson = obj.value("files");
         if (!filesJson.isArray()) {
-            emit ended();
+            emit errorOccurred(tr("Invalid file metadata."));
             return;
         }
 
         QJsonArray filesJsonArray = filesJson.toArray();
         if (filesJsonArray.empty()) {
-            emit ended();
+            emit errorOccurred(tr("No files were offered."));
+            return;
+        }
+        if (filesJsonArray.size() > FileTransferPolicy::MAX_FILES_PER_TRANSFER) {
+            emit errorOccurred(tr("Too many files were offered."));
             return;
         }
 
+        QList<FileMetadata> metadata;
+        quint64 declaredTotalSize = 0;
         foreach (const QJsonValue &v, filesJsonArray) {
             if (!v.isObject()) {
-                emit ended();
+                emit errorOccurred(tr("Invalid file metadata."));
                 return;
             }
             QJsonObject o = v.toObject();
 
             QJsonValue filename = o.value("filename");
-            if (!filename.isString()) {
-                emit ended();
+            if (!filename.isString() || !FileTransferPolicy::isSafeFilename(filename.toString())) {
+                emit errorOccurred(tr("Unsafe filename was rejected."));
                 return;
             }
 
             QJsonValue size = o.value("size");
-            if (!size.isDouble()) {
-                emit ended();
+            quint64 sizeInt;
+            if (!size.isDouble() || !FileTransferPolicy::parseFileSize(size.toDouble(), &sizeInt)) {
+                emit errorOccurred(tr("Invalid or oversized file was rejected."));
+                return;
+            }
+            if (!FileTransferPolicy::canAppendFile(declaredTotalSize, sizeInt)) {
+                emit errorOccurred(tr("The total transfer size is too large."));
                 return;
             }
 
-            quint64 sizeInt = static_cast<quint64>(size.toDouble());
-            totalSize += sizeInt;
-            transferQ.append({filename.toString(), sizeInt});
+            declaredTotalSize += sizeInt;
+            metadata.append({filename.toString(), sizeInt});
         }
 
+        transferQ = metadata;
+        totalSize = declaredTotalSize;
+        state = AWAITING_RESPONSE;
         emit fileMetadataReady(transferQ, totalSize, deviceName.toString(),
                                crypto.sessionKeyDigest());
+    } else if (state == AWAITING_RESPONSE) {
+        emit errorOccurred(tr("Handshake failed."));
     } else if (state == TRANSFERRING) {
-        transferredSize += data.size();
-        emit updateProgress(static_cast<double>(transferredSize) / totalSize);
+        if (transferredSize > totalSize
+                || static_cast<quint64>(data.size()) > totalSize - transferredSize) {
+            emit errorOccurred(tr("Received more file data than declared."));
+            return;
+        }
+
         QByteArray tmpData = data;
         while (tmpData.size() > 0) {
+            if (transferQ.empty() || !writingFile) {
+                emit errorOccurred(tr("Received more file data than declared."));
+                return;
+            }
+
             FileMetadata &curFile = transferQ.first();
             quint64 writeSize = qMin(curFile.size, static_cast<quint64>(tmpData.size()));
-            qint64 written = writingFile->write(tmpData.left(writeSize));
-            curFile.size -= written;
-            tmpData = tmpData.mid(written);
+            qint64 written = writingFile->write(tmpData.constData(), static_cast<qint64>(writeSize));
+            if (written <= 0) {
+                emit errorOccurred(tr("Unable to write received file."));
+                return;
+            }
+
+            curFile.size -= static_cast<quint64>(written);
+            transferredSize += static_cast<quint64>(written);
+            tmpData.remove(0, static_cast<int>(written));
+            if (totalSize > 0)
+                emit updateProgress(static_cast<double>(transferredSize) / totalSize);
+
             if (curFile.size == 0) {
+                QString filename = curFile.filename;
+                if (!finalizeCurrentFile(filename))
+                    return;
                 transferQ.pop_front();
+                if (transferQ.empty() && !tmpData.isEmpty()) {
+                    emit errorOccurred(tr("Received more file data than declared."));
+                    return;
+                }
                 createNextFile();
             }
         }
     }
 }
 
+bool FileTransferReceiver::createCurrentTempFile()
+{
+    writingFile = new QTemporaryFile(QDir(downloadPath).filePath(".landrop-part-XXXXXX"), this);
+    writingFile->setAutoRemove(true);
+    if (!writingFile->open()) {
+        writingFile->deleteLater();
+        writingFile = nullptr;
+        emit errorOccurred(tr("Unable to create a temporary file in %1.").arg(downloadPath));
+        return false;
+    }
+    return true;
+}
+
+bool FileTransferReceiver::finalizeCurrentFile(const QString &filename)
+{
+    if (!writingFile)
+        return false;
+    if (!FileTransferPolicy::commitTemporaryFile(writingFile, downloadPath, filename)) {
+        emit errorOccurred(tr("Unable to finalize received file %1.").arg(filename));
+        return false;
+    }
+
+    writingFile->deleteLater();
+    writingFile = nullptr;
+    return true;
+}
+
 void FileTransferReceiver::createNextFile()
 {
     while (!transferQ.empty()) {
         FileMetadata &curFile = transferQ.first();
-        QString filename = downloadPath + QDir::separator() + curFile.filename;
-        if (writingFile) {
-            writingFile->deleteLater();
-            writingFile = nullptr;
-        }
-        writingFile = new QFile(filename, this);
-        if (!writingFile->open(QIODevice::WriteOnly)) {
-            emit errorOccurred(tr("Unable to open file %1.").arg(filename));
+        if (!createCurrentTempFile())
             return;
-        }
         if (curFile.size > 0) {
             emit printMessage(tr("Receiving file %1...").arg(curFile.filename));
             break;
         }
+        QString filename = curFile.filename;
+        if (!finalizeCurrentFile(filename))
+            return;
         transferQ.pop_front();
     }
     if (transferQ.empty()) {
-        if (writingFile) {
-            writingFile->deleteLater();
-            writingFile = nullptr;
-        }
         state = FINISHED;
         QDesktopServices::openUrl(QUrl::fromLocalFile(downloadPath));
         emit printMessage(tr("Done!"));

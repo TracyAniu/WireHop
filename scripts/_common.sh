@@ -54,9 +54,7 @@ configure_landrop() {
     (cd "$BUILD_DIR" && "$qmake_bin" "${qmake_args[@]}")
 }
 
-build_landrop() {
-    configure_landrop
-
+build_jobs() {
     local jobs=${LANDROP_JOBS:-}
     if [[ -z "$jobs" ]]; then
         if command -v nproc >/dev/null 2>&1; then
@@ -67,6 +65,15 @@ build_landrop() {
             jobs=2
         fi
     fi
+
+    printf '%s\n' "$jobs"
+}
+
+build_landrop() {
+    configure_landrop
+
+    local jobs
+    jobs=$(build_jobs)
 
     make -C "$BUILD_DIR" -j"$jobs"
 }

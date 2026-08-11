@@ -1,6 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "No automated test suite is configured for LANDrop." >&2
-echo "Add a Qt Test target (or another real suite) and update scripts/test.sh before treating tests as available." >&2
-exit 2
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source "$SCRIPT_DIR/_common.sh"
+
+TEST_BUILD_DIR=${LANDROP_TEST_BUILD_DIR:-"$REPO_ROOT/build-agent-tests"}
+qmake_bin=$(find_qmake)
+qt_version=$("$qmake_bin" -query QT_VERSION)
+if [[ "$qt_version" != 5.* ]]; then
+    echo "LANDrop's reference tests require Qt 5; $qmake_bin reports Qt $qt_version." >&2
+    exit 2
+fi
+
+mkdir -p "$TEST_BUILD_DIR"
+qmake_args=("$REPO_ROOT/tests/tests.pro")
+if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists libsodium; then
+    sodium_include=$(pkg-config --variable=includedir libsodium)
+    sodium_lib=$(pkg-config --variable=libdir libsodium)
+    qmake_args+=("INCLUDEPATH+=$sodium_include" "LIBS+=-L$sodium_lib")
+fi
+(cd "$TEST_BUILD_DIR" && "$qmake_bin" "${qmake_args[@]}")
+make -C "$TEST_BUILD_DIR" -j"$(build_jobs)"
+"$TEST_BUILD_DIR/landrop_tests" -txt

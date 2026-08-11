@@ -7,6 +7,7 @@ SOURCES += \
     crypto.cpp \
     discoveryservice.cpp \
     filetransferdialog.cpp \
+    filetransferpolicy.cpp \
     filetransferreceiver.cpp \
     filetransfersender.cpp \
     filetransferserver.cpp \
@@ -23,6 +24,7 @@ HEADERS += \
     crypto.h \
     discoveryservice.h \
     filetransferdialog.h \
+    filetransferpolicy.h \
     filetransferreceiver.h \
     filetransfersender.h \
     filetransferserver.h \

@@ -32,15 +32,16 @@
 
 #pragma once
 
-#include <QApplication>
 #include <QByteArray>
+#include <QCoreApplication>
 #include <QString>
 
 class Crypto {
     Q_DECLARE_TR_FUNCTIONS(Crypto)
 public:
     Crypto();
-    quint64 publicKeySize();
+    static quint64 encryptedOverhead();
+    quint64 publicKeySize() const;
     QByteArray localPublicKey();
     void setRemotePublicKey(const QByteArray &remotePublicKey);
     QString sessionKeyDigest();

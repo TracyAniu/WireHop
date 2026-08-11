@@ -30,7 +30,7 @@ The root `README.md` warns that this source snapshot does not represent the late
 - `./scripts/dev.sh`: build and run LANDrop.
 - `./scripts/typecheck.sh`: configure and compile the application.
 - `./scripts/lint.sh`: check harness shell syntax, JSON, whitespace, and Git diff errors.
-- `./scripts/test.sh`: reports that no automated test suite is configured and exits with status 2.
+- `./scripts/test.sh`: builds and runs the Qt Test security and transfer-policy regression suite.
 - `./scripts/smoke.sh`: build, launch the native application briefly, and verify it remains running.
 
 The scripts use `build-agent/` by default. Override with `LANDROP_BUILD_DIR`, `QMAKE_BIN`, or `LANDROP_JOBS` when needed.

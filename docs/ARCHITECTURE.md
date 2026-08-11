@@ -35,6 +35,7 @@ LANDrop is a single-process Qt Widgets application. `main.cpp` creates the appli
 - `FileTransferServer` accepts TCP connections and creates receiver sessions/dialogs.
 - `FileTransferSession` owns shared framing, key negotiation, encryption/decryption, state, and transfer signals.
 - `FileTransferSender` and `FileTransferReceiver` implement their respective metadata and byte-stream state machines.
+- `FileTransferPolicy` is the reusable boundary for portable leaf filenames, transfer-size limits, collision naming, and non-overwriting temporary-file commits.
 - Dialog classes translate user actions and session signals into UI. Generated `ui_*.h` files come from the checked-in `.ui` forms and must not be edited directly.
 - `Crypto` is the libsodium boundary. Protocol or cryptographic changes require explicit compatibility and security review.
 
@@ -54,8 +55,9 @@ LANDrop is a single-process Qt Widgets application. `main.cpp` creates the appli
 3. Subsequent messages use a two-byte big-endian length followed by a nonce and ChaCha20-Poly1305 ciphertext.
 4. The sender transmits encrypted JSON metadata with device information, filenames, and sizes.
 5. The receiver displays the request and sends an encrypted accept/reject response.
-6. When accepted, the sender streams encrypted chunks and the receiver writes bytes in metadata order to the configured directory.
-7. Progress signals update the dialog; completion disconnects the socket and opens the receiver's download directory.
+6. When accepted, the sender streams encrypted chunks and the receiver writes bytes in metadata order to hidden temporary files in the configured directory.
+7. A completed temporary file is atomically renamed when the platform permits. Existing destination names are preserved and the received file receives a numbered suffix.
+8. Progress signals update the dialog; completion disconnects the socket and opens the receiver's download directory.
 
 ## Dependency Rules
 
@@ -77,8 +79,8 @@ LANDrop is a single-process Qt Widgets application. `main.cpp` creates the appli
 
 ## Known Tradeoffs and Risks
 
-- There is no automated test suite; compilation and a short startup check are the only executable repository-level validation today.
+- The Qt Test suite covers transfer-policy and crypto error paths, but there is no automated loopback peer-transfer or UI suite yet.
 - The transfer protocol has no explicit version field, so wire changes can silently break compatibility.
 - Discovery trusts unauthenticated LAN broadcasts. The session code and receiver confirmation are the user-visible peer check.
-- Incoming filenames and declared sizes cross a trust boundary; see `docs/SECURITY.md` before changing receive behavior.
+- Incoming filenames and declared sizes cross a trust boundary. Current limits and non-overwriting commit behavior are centralized in `FileTransferPolicy`; see `docs/SECURITY.md` before changing them.
 - The checked-in packaging workflow and action versions reflect an older source snapshot and may require maintenance before release use.

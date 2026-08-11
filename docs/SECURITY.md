@@ -26,11 +26,16 @@ Encryption alone does not establish peer identity. The user comparison and expli
 - Keep libsodium and Qt dependency changes reviewable and update all platform packaging inputs.
 - Do not commit signing material, tokens, certificates, or other secrets.
 
-## Known Areas Requiring Care
+## Current Receive-Side Controls
 
-At initialization time, the receiver constructs output paths from peer-provided filenames and trusts peer-declared sizes with limited bounds. Treat changes near `FileTransferReceiver::processReceivedData()` and `createNextFile()` as security-sensitive, and assess the current behavior before any release.
+- Metadata must contain a bounded sender name and 1-1024 file entries.
+- Every filename must be a portable leaf name of at most 255 UTF-8 bytes. Paths, traversal, control/format characters, Windows device names, and platform-forbidden characters are rejected.
+- Individual files are limited to 1 TiB and one transfer to 4 TiB. Integer, overflow, declared-byte, short-write, ciphertext, frame-size, socket-buffer, and pre-transfer free-space checks fail closed.
+- Files are received into auto-removing temporary files. Completion never overwrites an existing destination; a numbered name is selected instead.
 
-The two-byte encrypted-frame length and 64,000-byte sender chunk are coupled. Cryptographic overhead or chunk-size changes must prove that every framed message remains representable and bounded.
+Treat changes near `FileTransferPolicy`, `FileTransferSession`, `Crypto`, or the sender/receiver state machines as security-sensitive. Completed files from earlier in a multi-file transfer remain visible if a later file fails; only the active incomplete file is automatically removed.
+
+The two-byte encrypted-frame length and 64,000-byte sender chunk are coupled. Outbound frames are now rejected when nonce and authentication overhead would exceed 65,535 bytes. Cryptographic overhead or chunk-size changes must preserve and test that invariant.
 
 ## Required Review and Validation
 

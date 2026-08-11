@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <QFile>
+#include <QTemporaryFile>
 
 #include "filetransfersession.h"
 
@@ -44,7 +44,9 @@ public:
 protected:
     void processReceivedData(const QByteArray &data);
 private:
-    QFile *writingFile;
+    QTemporaryFile *writingFile;
     QString downloadPath;
+    bool createCurrentTempFile();
+    bool finalizeCurrentFile(const QString &filename);
     void createNextFile();
 };

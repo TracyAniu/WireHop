@@ -69,22 +69,37 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>Crypto</name>
     <message>
-        <location filename="../crypto.cpp" line="67"/>
+        <location filename="../crypto.cpp" line="50"/>
+        <source>Unable to calculate local public key.</source>
+        <translation>无法计算本地公钥。</translation>
+    </message>
+    <message>
+        <location filename="../crypto.cpp" line="72"/>
+        <source>Invalid remote public key.</source>
+        <translation>远程公钥无效。</translation>
+    </message>
+    <message>
+        <location filename="../crypto.cpp" line="77"/>
         <source>Unable to calculate session key.</source>
         <translation>无法计算会话密钥。</translation>
     </message>
     <message>
-        <location filename="../crypto.cpp" line="99"/>
+        <location filename="../crypto.cpp" line="104"/>
+        <source>Encryption failed.</source>
+        <translation>加密失败。</translation>
+    </message>
+    <message>
+        <location filename="../crypto.cpp" line="111"/>
         <source>Cipher text too short.</source>
         <translation>密文太短。</translation>
     </message>
     <message>
-        <location filename="../crypto.cpp" line="110"/>
+        <location filename="../crypto.cpp" line="122"/>
         <source>Decryption failed.</source>
         <translation>解密失败。</translation>
     </message>
     <message>
-        <location filename="../crypto.cpp" line="119"/>
+        <location filename="../crypto.cpp" line="131"/>
         <source>Unable to initialize libsodium.</source>
         <translation>无法初始化 libsodium。</translation>
     </message>
@@ -134,27 +149,96 @@ Would you like to receive it?</source>
 <context>
     <name>FileTransferReceiver</name>
     <message>
-        <location filename="../filetransferreceiver.cpp" line="54"/>
+        <location filename="../filetransferreceiver.cpp" line="52"/>
+        <location filename="../filetransferreceiver.cpp" line="157"/>
+        <source>Handshake failed.</source>
+        <translation>握手失败。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="58"/>
         <source>Cannot create download path: </source>
         <translation>无法创建下载路径： </translation>
     </message>
     <message>
-        <location filename="../filetransferreceiver.cpp" line="58"/>
+        <location filename="../filetransferreceiver.cpp" line="62"/>
         <source>Download path is not writable: </source>
         <translation>下载路径不可写： </translation>
     </message>
     <message>
-        <location filename="../filetransferreceiver.cpp" line="151"/>
-        <source>Unable to open file %1.</source>
-        <translation>无法打开文件 %1。</translation>
+        <location filename="../filetransferreceiver.cpp" line="69"/>
+        <source>Not enough free space in the download path.</source>
+        <translation>下载路径的可用空间不足。</translation>
     </message>
     <message>
-        <location filename="../filetransferreceiver.cpp" line="155"/>
+        <location filename="../filetransferreceiver.cpp" line="94"/>
+        <location filename="../filetransferreceiver.cpp" line="107"/>
+        <location filename="../filetransferreceiver.cpp" line="125"/>
+        <source>Invalid file metadata.</source>
+        <translation>文件元数据无效。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="101"/>
+        <source>Invalid sender name.</source>
+        <translation>发送方名称无效。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="113"/>
+        <source>No files were offered.</source>
+        <translation>发送方未提供任何文件。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="117"/>
+        <source>Too many files were offered.</source>
+        <translation>发送方提供的文件数量过多。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="132"/>
+        <source>Unsafe filename was rejected.</source>
+        <translation>已拒绝不安全的文件名。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="139"/>
+        <source>Invalid or oversized file was rejected.</source>
+        <translation>已拒绝无效或过大的文件。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="143"/>
+        <source>The total transfer size is too large.</source>
+        <translation>传输文件的总大小过大。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="161"/>
+        <location filename="../filetransferreceiver.cpp" line="168"/>
+        <location filename="../filetransferreceiver.cpp" line="192"/>
+        <source>Received more file data than declared.</source>
+        <translation>接收到的数据超过声明的文件大小。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="176"/>
+        <source>Unable to write received file.</source>
+        <translation>无法写入接收的文件。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="208"/>
+        <source>Unable to create a temporary file in %1.</source>
+        <translation>无法在 %1 中创建临时文件。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="219"/>
+        <source>Unable to finalize received file %1.</source>
+        <translation>无法完成接收文件 %1。</translation>
+    </message>
+    <message>
+        <source>Unable to open file %1.</source>
+        <translation type="vanished">无法打开文件 %1。</translation>
+    </message>
+    <message>
+        <location filename="../filetransferreceiver.cpp" line="235"/>
         <source>Receiving file %1...</source>
         <translation>正在接收文件 %1...</translation>
     </message>
     <message>
-        <location filename="../filetransferreceiver.cpp" line="167"/>
+        <location filename="../filetransferreceiver.cpp" line="246"/>
         <source>Done!</source>
         <translation>完成！</translation>
     </message>
@@ -162,25 +246,45 @@ Would you like to receive it?</source>
 <context>
     <name>FileTransferSender</name>
     <message>
-        <location filename="../filetransfersender.cpp" line="77"/>
-        <location filename="../filetransfersender.cpp" line="84"/>
+        <location filename="../filetransfersender.cpp" line="60"/>
+        <source>The selected file count is invalid.</source>
+        <translation>所选文件数量无效。</translation>
+    </message>
+    <message>
+        <location filename="../filetransfersender.cpp" line="66"/>
+        <source>The configured device name is invalid.</source>
+        <translation>配置的设备名称无效。</translation>
+    </message>
+    <message>
+        <location filename="../filetransfersender.cpp" line="75"/>
+        <source>A selected file has an unsafe name or unsupported size.</source>
+        <translation>所选文件的名称不安全或大小不受支持。</translation>
+    </message>
+    <message>
+        <location filename="../filetransfersender.cpp" line="99"/>
+        <location filename="../filetransfersender.cpp" line="107"/>
         <source>Handshake failed.</source>
         <translation>握手失败。</translation>
     </message>
     <message>
-        <location filename="../filetransfersender.cpp" line="89"/>
+        <location filename="../filetransfersender.cpp" line="112"/>
         <source>The receiving device rejected your file(s).</source>
         <translation>接收设备拒绝了你的文件。</translation>
     </message>
     <message>
-        <location filename="../filetransfersender.cpp" line="108"/>
+        <location filename="../filetransfersender.cpp" line="131"/>
         <source>Sending file %1...</source>
         <translation>正在发送文件 %1...</translation>
     </message>
     <message>
-        <location filename="../filetransfersender.cpp" line="114"/>
+        <location filename="../filetransfersender.cpp" line="137"/>
         <source>Done!</source>
         <translation>完成！</translation>
+    </message>
+    <message>
+        <location filename="../filetransfersender.cpp" line="147"/>
+        <source>Unable to read file %1.</source>
+        <translation>无法读取文件 %1。</translation>
     </message>
 </context>
 <context>
@@ -194,17 +298,26 @@ Would you like to receive it?</source>
 <context>
     <name>FileTransferSession</name>
     <message>
-        <location filename="../filetransfersession.cpp" line="54"/>
+        <location filename="../filetransfersession.cpp" line="57"/>
         <source>Handshaking...</source>
         <translation>正在握手...</translation>
     </message>
     <message>
-        <location filename="../filetransfersession.cpp" line="80"/>
-        <source>Handshake failed.</source>
-        <translation>握手失败。</translation>
+        <location filename="../filetransfersession.cpp" line="70"/>
+        <source>Message exceeds the protocol size limit.</source>
+        <translation>消息超过协议大小限制。</translation>
     </message>
     <message>
-        <location filename="../filetransfersession.cpp" line="91"/>
+        <location filename="../filetransfersession.cpp" line="85"/>
+        <source>Unable to queue data for sending.</source>
+        <translation>无法将数据加入发送队列。</translation>
+    </message>
+    <message>
+        <source>Handshake failed.</source>
+        <translation type="vanished">握手失败。</translation>
+    </message>
+    <message>
+        <location filename="../filetransfersession.cpp" line="109"/>
         <source>Handshaking... Code: %1</source>
         <translation>正在握手... 验证码：%1</translation>
     </message>

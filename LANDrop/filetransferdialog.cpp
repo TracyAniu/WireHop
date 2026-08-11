@@ -43,6 +43,7 @@ FileTransferDialog::FileTransferDialog(QWidget *parent, FileTransferSession *ses
 
     questionBox.setIcon(QMessageBox::Question);
     questionBox.setWindowTitle(QApplication::applicationName());
+    questionBox.setTextFormat(Qt::PlainText);
     questionBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     questionBox.setDefaultButton(QMessageBox::Yes);
     connect(&questionBox, &QMessageBox::finished, this, &FileTransferDialog::respond);

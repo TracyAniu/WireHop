@@ -14,16 +14,16 @@
 | `./scripts/dev.sh` | Configures, compiles, and runs the native application. |
 | `./scripts/typecheck.sh` | Performs the closest available static check by compiling all application sources. |
 | `./scripts/lint.sh` | Checks harness shell syntax, `features.json`, trailing whitespace, and `git diff --check`. |
-| `./scripts/test.sh` | Intentionally exits 2 because no automated Qt test target exists. |
+| `./scripts/test.sh` | Builds and runs the Qt Test suite for filename/size policy, collision-safe commits, and cryptographic input handling. |
 | `./scripts/smoke.sh` | Compiles, starts LANDrop, and verifies the process remains alive for a short interval. |
 
-Build artifacts default to the ignored `build-agent/` directory. `LANDROP_BUILD_DIR`, `QMAKE_BIN`, `LANDROP_JOBS`, and `LANDROP_SMOKE_SECONDS` are supported overrides.
+Application build artifacts default to the ignored `build-agent/` directory and test artifacts to `build-agent-tests/`. `LANDROP_BUILD_DIR`, `LANDROP_TEST_BUILD_DIR`, `QMAKE_BIN`, `LANDROP_JOBS`, and `LANDROP_SMOKE_SECONDS` are supported overrides.
 
 ## Current Strategy
 
-The repository currently has no Qt Test target, fixtures, or automated peer-transfer test. Compilation catches type/link/resource integration errors, and the smoke wrapper covers only initial native process startup. Network, dialog, persistence, and actual file-transfer behavior still require manual validation.
+The Qt Test target covers portable filename validation, declared size arithmetic, collision naming, non-overwriting temporary-file commits, shared-key encryption round trips, malformed key lengths, short ciphertext, and authentication failure. Compilation catches type/link/resource integration errors, and the smoke wrapper covers initial native process startup.
 
-When adding automated coverage, prioritize pure protocol/metadata/crypto tests first, then loopback sender/receiver integration with isolated temporary directories. Make `scripts/test.sh` invoke the suite once a real target exists.
+Network framing, dialog behavior, persistence, actual peer-to-peer transfer, interruption cleanup timing, and non-macOS behavior still require manual validation. The next automated layer should be a loopback sender/receiver integration test with isolated temporary directories.
 
 ## Critical Manual Workflows
 
@@ -45,4 +45,4 @@ Use isolated test files and a dedicated temporary download directory. Never over
 
 ## Validation Reporting
 
-State exactly which wrappers and manual paths ran. An intentional status-2 result from `scripts/test.sh` means automated behavior remains unverified; do not describe it as a passing test suite.
+State exactly which wrappers and manual paths ran. Do not describe peer-to-peer, UI, or untested platform behavior as verified merely because the unit suite passes.

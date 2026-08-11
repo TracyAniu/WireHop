@@ -51,6 +51,7 @@ protected:
     enum State {
         HANDSHAKE1,
         HANDSHAKE2,
+        AWAITING_RESPONSE,
         TRANSFERRING,
         FINISHED
     } state;
@@ -60,7 +61,7 @@ protected:
     QList<FileMetadata> transferQ;
     quint64 totalSize;
     quint64 transferredSize;
-    void encryptAndSend(const QByteArray &data);
+    bool encryptAndSend(const QByteArray &data);
     virtual void handshake1Finished();
     virtual void processReceivedData(const QByteArray &data) = 0;
 private slots:

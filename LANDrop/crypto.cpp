@@ -45,13 +45,20 @@ Crypto::Crypto() :
 {
     init();
     randombytes_buf(secretKey.data(), secretKey.size());
-    crypto_scalarmult_base(reinterpret_cast<unsigned char *>(publicKey.data()),
-                           reinterpret_cast<const unsigned char *>(secretKey.data()));
+    if (crypto_scalarmult_base(reinterpret_cast<unsigned char *>(publicKey.data()),
+                               reinterpret_cast<const unsigned char *>(secretKey.data())) != 0)
+        throw std::runtime_error(tr("Unable to calculate local public key.").toUtf8().toStdString());
 }
 
-quint64 Crypto::publicKeySize()
+quint64 Crypto::encryptedOverhead()
 {
-    return crypto_aead_chacha20poly1305_IETF_KEYBYTES;
+    return crypto_aead_chacha20poly1305_IETF_NPUBBYTES
+            + crypto_aead_chacha20poly1305_IETF_ABYTES;
+}
+
+quint64 Crypto::publicKeySize() const
+{
+    return crypto_scalarmult_BYTES;
 }
 
 QByteArray Crypto::localPublicKey()
@@ -61,6 +68,9 @@ QByteArray Crypto::localPublicKey()
 
 void Crypto::setRemotePublicKey(const QByteArray &remotePublicKey)
 {
+    if (static_cast<quint64>(remotePublicKey.size()) != publicKeySize())
+        throw std::runtime_error(tr("Invalid remote public key.").toUtf8().toStdString());
+
     if (crypto_scalarmult(reinterpret_cast<unsigned char *>(sessionKey.data()),
                           reinterpret_cast<const unsigned char *>(secretKey.data()),
                           reinterpret_cast<const unsigned char *>(remotePublicKey.data())) != 0)
@@ -85,22 +95,24 @@ QByteArray Crypto::encrypt(const QByteArray &data)
     quint64 cipherTextLen;
     QByteArray nonce(crypto_aead_chacha20poly1305_IETF_NPUBBYTES, 0);
     randombytes_buf(nonce.data(), nonce.size());
-    crypto_aead_chacha20poly1305_ietf_encrypt(reinterpret_cast<unsigned char *>(cipherText.data()), &cipherTextLen,
-                                              reinterpret_cast<const unsigned char *>(data.data()), data.size(),
-                                              nullptr, 0, nullptr,
-                                              reinterpret_cast<const unsigned char *>(nonce.data()),
-                                              reinterpret_cast<const unsigned char *>(sessionKey.data()));
+    if (crypto_aead_chacha20poly1305_ietf_encrypt(
+                reinterpret_cast<unsigned char *>(cipherText.data()), &cipherTextLen,
+                reinterpret_cast<const unsigned char *>(data.data()), data.size(),
+                nullptr, 0, nullptr,
+                reinterpret_cast<const unsigned char *>(nonce.data()),
+                reinterpret_cast<const unsigned char *>(sessionKey.data())) != 0)
+        throw std::runtime_error(tr("Encryption failed.").toUtf8().toStdString());
     return nonce + cipherText.left(cipherTextLen);
 }
 
 QByteArray Crypto::decrypt(const QByteArray &data)
 {
-    if (static_cast<quint64>(data.size()) < crypto_aead_chacha20poly1305_IETF_NPUBBYTES)
+    if (static_cast<quint64>(data.size()) < encryptedOverhead())
         throw std::runtime_error(tr("Cipher text too short.").toUtf8().toStdString());
-    QByteArray plainText(data.size() - crypto_aead_chacha20poly1305_IETF_ABYTES, 0);
-    quint64 plainTextLen;
     QByteArray nonce = data.left(crypto_aead_chacha20poly1305_IETF_NPUBBYTES);
     QByteArray cipherText = data.mid(crypto_aead_chacha20poly1305_IETF_NPUBBYTES);
+    QByteArray plainText(cipherText.size() - crypto_aead_chacha20poly1305_IETF_ABYTES, 0);
+    quint64 plainTextLen;
     if (crypto_aead_chacha20poly1305_ietf_decrypt(reinterpret_cast<unsigned char *>(plainText.data()), &plainTextLen,
                                                   nullptr,
                                                   reinterpret_cast<const unsigned char *>(cipherText.data()), cipherText.size(),
