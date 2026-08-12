@@ -17,11 +17,13 @@
 pub mod crypto;
 pub mod discovery;
 pub mod frame;
+pub mod identity;
 pub mod message;
 pub mod policy;
 pub mod protocol;
 pub mod session;
 pub mod store;
+pub mod tls;
 
 /// Errors surfaced by the core.
 ///

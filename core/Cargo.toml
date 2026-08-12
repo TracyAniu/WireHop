@@ -16,7 +16,12 @@ repository = "https://github.com/TracyAniu/WireHop"
 blake2 = "0.10"
 chacha20poly1305 = "0.10"
 rand_core = { version = "0.6", features = ["getrandom"] }
+rcgen = "0.14"
+# ring rather than the default aws-lc-rs: no cmake/NASM build dependency,
+# which matters for the iOS/Android cross-compilation this program targets.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "logging"] }
 serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
 serde_json = "1"
 thiserror = "1"
 x25519-dalek = { version = "2", features = ["static_secrets"] }
