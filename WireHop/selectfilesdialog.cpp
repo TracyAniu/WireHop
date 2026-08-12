@@ -61,11 +61,26 @@ SelectFilesDialog::~SelectFilesDialog()
     delete ui;
 }
 
+void SelectFilesDialog::addFiles(const QStringList &filenames)
+{
+    foreach (const QString &filename, filenames) {
+        addFile(filename);
+    }
+    updateFileStringListModel();
+}
+
 void SelectFilesDialog::addFile(const QString &filename)
 {
     foreach (QSharedPointer<QFile> file, files) {
         if (file->fileName() == filename)
             return;
+    }
+
+    if (QFileInfo(filename).isDir()) {
+        QMessageBox::critical(this, QApplication::applicationName(),
+                              tr("%1 is not a regular file. Skipping.")
+                              .arg(filename));
+        return;
     }
 
     QSharedPointer<QFile> fp = QSharedPointer<QFile>::create(filename);

@@ -26,6 +26,13 @@ find_qmake() {
 }
 
 configure_wirehop() {
+    # qmake's generated bundle-plist rule has no dependency on the source
+    # Info.plist; drop the stale copy so edits actually reach the bundle.
+    if [[ -f "$BUILD_DIR/WireHop.app/Contents/Info.plist" \
+            && "$REPO_ROOT/WireHop/Info.plist" -nt "$BUILD_DIR/WireHop.app/Contents/Info.plist" ]]; then
+        rm -f "$BUILD_DIR/WireHop.app/Contents/Info.plist"
+    fi
+
     if [[ -f "$BUILD_DIR/WireHop.app/Contents/Resources/qt.conf" ]]; then
         echo "The build directory $BUILD_DIR contains a macdeployqt-processed bundle and cannot be reused." >&2
         echo "Delete it (rm -rf \"$BUILD_DIR\") or point WIREHOP_BUILD_DIR at a clean directory. Packaging must deploy into a staging copy, never into the build directory." >&2

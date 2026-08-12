@@ -82,3 +82,13 @@ unix {
 }
 
 QMAKE_INFO_PLIST = Info.plist
+
+macx {
+    HEADERS += macservices.h
+    OBJECTIVE_SOURCES += macservices.mm
+    LIBS += -framework AppKit
+
+    infoplist_locales.files = locales/zh-Hans.lproj
+    infoplist_locales.path = Contents/Resources
+    QMAKE_BUNDLE_DATA += infoplist_locales
+}

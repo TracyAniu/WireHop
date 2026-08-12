@@ -97,6 +97,16 @@ void TrayIcon::sendActionTriggered()
     d->show();
 }
 
+void TrayIcon::sendFiles(const QStringList &filenames)
+{
+    SelectFilesDialog *d = new SelectFilesDialog(nullptr, discoveryService);
+    d->setAttribute(Qt::WA_DeleteOnClose);
+    d->addFiles(filenames);
+    d->show();
+    d->raise();
+    d->activateWindow();
+}
+
 void TrayIcon::openDownloadFolderActionTriggered()
 {
     QString downloadPath = Settings::downloadPath();

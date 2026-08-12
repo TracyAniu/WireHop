@@ -44,6 +44,7 @@ class TrayIcon : public QSystemTrayIcon {
     Q_OBJECT
 public:
     explicit TrayIcon(QObject *parent = nullptr);
+    void sendFiles(const QStringList &filenames);
 private:
     QMenu menu;
     AboutDialog aboutDialog;

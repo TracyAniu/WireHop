@@ -14,7 +14,7 @@ WireHop is derived from the open-source LANDrop 0.4.0 snapshot. Treat this repos
 ## Core Workflows
 
 1. Launch WireHop and keep it available from the system tray.
-2. Select or drag in one or more regular files, discover a peer or enter its address and port, and start a transfer.
+2. Select or drag in one or more regular files, discover a peer or enter its address and port, and start a transfer. On macOS, files can also enter through Finder's right-click Services menu ("Send with WireHop"), open-with/dock events, or command-line arguments.
 3. On the receiving device, review the sender, file summary, total size, and six-digit session code, then accept or reject the transfer.
 4. Configure the device name, download directory, discoverability, and listening port.
 5. Open the configured download directory or manually check for product updates from the tray UI.
