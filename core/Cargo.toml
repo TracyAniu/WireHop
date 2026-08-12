@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = ["wirehop-core", "wirehop-cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "BSD-3-Clause"
+repository = "https://github.com/TracyAniu/WireHop"
+
+# Pinned centrally so both crates agree. Pure-Rust implementations are chosen
+# over libsodium bindings deliberately: the mobile shells (M5) need clean
+# cross-compilation, and the golden vectors are what prove bit-compatibility
+# with the libsodium-based baseline.
+[workspace.dependencies]
+blake2 = "0.10"
+chacha20poly1305 = "0.10"
+rand_core = { version = "0.6", features = ["getrandom"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+x25519-dalek = { version = "2", features = ["static_secrets"] }

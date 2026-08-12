@@ -1,0 +1,11 @@
+[package]
+name = "wirehop-cli"
+description = "GUI-free driver for wirehop-core, used by the golden-vector and interop gates."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde_json.workspace = true
+wirehop-core = { path = "../wirehop-core" }

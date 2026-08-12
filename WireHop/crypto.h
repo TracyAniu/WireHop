@@ -45,6 +45,10 @@ public:
     QByteArray localPublicKey();
     void setRemotePublicKey(const QByteArray &remotePublicKey);
     QString sessionKeyDigest();
+    // Derivation split out from sessionKeyDigest() so the conformance vectors
+    // in docs/references/protocol-vectors.json can pin it against fixed keys
+    // rather than a live handshake. Behavior is unchanged.
+    static QString sessionCodeForKey(const QByteArray &key);
     QByteArray encrypt(const QByteArray &data);
     QByteArray decrypt(const QByteArray &data);
 private:

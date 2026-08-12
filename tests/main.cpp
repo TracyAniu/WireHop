@@ -5,6 +5,7 @@
 int runFileTransferPolicyTest(int argc, char *argv[]);
 int runFileTransferSessionTest(int argc, char *argv[]);
 int runProtocolTest(int argc, char *argv[]);
+int runProtocolVectorsTest(int argc, char *argv[]);
 
 int main(int argc, char *argv[])
 {
@@ -13,5 +14,6 @@ int main(int argc, char *argv[])
     status |= runFileTransferPolicyTest(argc, argv);
     status |= runFileTransferSessionTest(argc, argv);
     status |= runProtocolTest(argc, argv);
+    status |= runProtocolVectorsTest(argc, argv);
     return status;
 }

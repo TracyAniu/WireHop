@@ -24,11 +24,32 @@ jobs:
       - name: Install libsodium and ripgrep
         run: sudo apt install libsodium-dev ripgrep
 
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            core/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('core/**/Cargo.toml') }}
+
+      # WIREHOP_REQUIRE_RUST makes a missing toolchain fail rather than skip,
+      # so CI can never silently stop checking the core or the conformance
+      # fixture that keeps the two implementations from drifting apart.
       - name: Lint
         run: ./scripts/lint.sh
+        env:
+          WIREHOP_REQUIRE_RUST: '1'
 
       - name: Test
         run: ./scripts/test.sh
+        env:
+          WIREHOP_REQUIRE_RUST: '1'
 
   package_linux:
     name: Linux Package

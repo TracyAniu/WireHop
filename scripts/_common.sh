@@ -108,3 +108,45 @@ wirehop_binary() {
     echo "The WireHop executable was not found under $BUILD_DIR after a successful build." >&2
     return 1
 }
+
+# --- Rust core -------------------------------------------------------------
+# The Rust core (core/) is a second implementation of the wire protocol, held
+# to the C++/Qt baseline by the conformance fixture. Contributors without a
+# Rust toolchain must still be able to build and test the Qt application, so
+# these helpers skip loudly rather than fail. CI sets WIREHOP_REQUIRE_RUST=1 so
+# a missing toolchain there is an error, never a silent loss of coverage.
+
+CORE_DIR="$REPO_ROOT/core"
+
+find_cargo() {
+    if [[ -n "${CARGO_BIN:-}" ]]; then
+        printf '%s\n' "$CARGO_BIN"
+        return 0
+    fi
+    if command -v cargo >/dev/null 2>&1; then
+        command -v cargo
+        return 0
+    fi
+    if [[ -x "$HOME/.cargo/bin/cargo" ]]; then
+        printf '%s\n' "$HOME/.cargo/bin/cargo"
+        return 0
+    fi
+    return 1
+}
+
+# Runs `cargo "$@"` in core/, or reports a skip. Returns non-zero only when the
+# toolchain is required but absent, or when cargo itself fails.
+run_cargo() {
+    local cargo_bin
+    if ! cargo_bin=$(find_cargo); then
+        if [[ "${WIREHOP_REQUIRE_RUST:-0}" == "1" ]]; then
+            echo "Rust toolchain not found and WIREHOP_REQUIRE_RUST=1." >&2
+            echo "Install it with: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh" >&2
+            return 2
+        fi
+        echo "SKIPPING Rust core checks: no cargo on PATH (set CARGO_BIN, or install rustup)." >&2
+        echo "  The Qt application was still checked. Set WIREHOP_REQUIRE_RUST=1 to make this fatal." >&2
+        return 0
+    fi
+    (cd "$CORE_DIR" && "$cargo_bin" "$@")
+}

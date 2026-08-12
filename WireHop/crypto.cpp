@@ -79,9 +79,15 @@ void Crypto::setRemotePublicKey(const QByteArray &remotePublicKey)
 
 QString Crypto::sessionKeyDigest()
 {
+    return sessionCodeForKey(sessionKey);
+}
+
+QString Crypto::sessionCodeForKey(const QByteArray &key)
+{
+    init();
     QByteArray h(crypto_generichash_BYTES_MIN, 0);
     crypto_generichash(reinterpret_cast<unsigned char *>(h.data()), h.size(),
-                       reinterpret_cast<const unsigned char *>(sessionKey.data()), sessionKey.size(),
+                       reinterpret_cast<const unsigned char *>(key.data()), key.size(),
                        nullptr, 0);
     quint64 hash = 0;
     for (int i = 0; i < 8; ++i)

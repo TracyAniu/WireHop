@@ -51,36 +51,46 @@ Sequencing note: the owner ranked performance ahead of security, but the TLS 1.3
 
 ## Implementation Steps
 
-- [ ] Read `AGENTS.md` and `PROTOCOL.md`; confirm a clean tree; verify the Rust toolchain and pin it (`rust-toolchain.toml`).
-- [ ] Create the `core/` Cargo workspace: `wirehop-core` library + `wirehop-cli` binary; wire up `.gitignore` for `target/`.
-- [ ] Implement the crypto layer from spec: X25519 scalarmult, ChaCha20-Poly1305-IETF with 12-byte random nonce prefix, BLAKE2b session-code derivation. Unit-test against fixed vectors.
-- [ ] Implement framing and the message sequence: 2-byte big-endian length prefix, 64,000-byte data chunking, metadata → response → data → ack.
-- [ ] Implement negotiation: version/caps emission with sorted caps, bounded parsing with fail-to-legacy, and the negotiated-intersection rule (`hasNegotiatedCap` equivalent).
-- [ ] Add the golden-vector fixtures and a Rust test that verifies them.
-- [ ] Add the mirroring Qt-side test that verifies the **same** fixtures, so both implementations are pinned to one artifact.
-- [ ] Extend `scripts/{lint,typecheck,test}.sh` with the Rust steps, including graceful skip when the toolchain is missing.
-- [ ] Build the loopback interop test (Rust CLI ↔ Qt session, both directions) and add it to `test.sh`.
-- [ ] Extend CI to run the Rust jobs and keep packaging gated on them.
-- [ ] Docs: update `AGENTS.md` (repo map, stable commands), `docs/ARCHITECTURE.md` (two implementations, one spec), `docs/TESTING.md` (golden vectors and interop as the divergence gate), and `docs/PRODUCT.md` if scope language changes.
+- [x] Read `AGENTS.md` and `PROTOCOL.md`; confirm a clean tree; install and pin the Rust toolchain (`rust-toolchain.toml`, rustup stable).
+- [x] Create the `core/` Cargo workspace: `wirehop-core` library + `wirehop-cli` binary; `.gitignore` for `core/target/`.
+- [x] Implement the crypto layer from spec: X25519 scalarmult, ChaCha20-Poly1305-IETF with 12-byte random nonce prefix, BLAKE2b session-code derivation.
+- [x] Implement framing: 2-byte big-endian length prefix, incremental `FrameReader`, 64,000-byte quantum, compile-time bound check.
+- [x] Implement negotiation: version/caps emission with sorted caps, bounded parsing with fail-to-legacy, negotiated-intersection rule.
+- [x] Implement messages and receiver-side validation (metadata/response/ack, filename and size policy).
+- [x] Add the golden-vector fixture and the Rust test that verifies it, including a staleness check that re-emits and compares.
+- [x] Add the mirroring Qt-side test (`tests/tst_protocolvectors.cpp`) that verifies the **same** fixture.
+- [x] Extend `scripts/{lint,typecheck,test}.sh` with the Rust steps, with graceful skip plus `WIREHOP_REQUIRE_RUST=1` strict mode.
+- [x] Extend CI to install Rust, cache the build, and run both suites with strict mode; packaging stays gated on them.
+- [x] Docs: `AGENTS.md` (repo map, stable commands, fixture rule), `docs/TESTING.md` (conformance gate).
+- [ ] Build the loopback interop test (Rust CLI ↔ Qt session, both directions) and add it to `test.sh`. **Not started.**
+- [ ] `docs/ARCHITECTURE.md`: two implementations, one spec. **Not started.**
 
 ## Validation
 
-- [ ] `./scripts/lint.sh` (shell + Rust fmt/clippy)
-- [ ] `./scripts/typecheck.sh` (Qt build + `cargo check`)
-- [ ] `./scripts/test.sh` (Qt suite + Rust suite + golden vectors + interop)
-- [ ] `./scripts/smoke.sh` (unchanged Qt startup path still green)
-- [ ] Interop verified in both directions with byte-comparison of delivered files, and the negotiated `ack` observed.
-- [ ] Toolchain-absent path exercised: scripts skip Rust with a clear message and the Qt path still passes.
+- [x] `./scripts/lint.sh` (shell + `cargo fmt --check` + `cargo clippy -D warnings`, all clean)
+- [x] `./scripts/typecheck.sh` (Qt build + `cargo check --all-targets`)
+- [x] `./scripts/test.sh` — **55 Qt cases + 41 Rust cases, 0 failures**, including both halves of the conformance gate.
+- [x] `./scripts/smoke.sh` — re-run after the `Crypto` refactor; app launched and stayed alive.
+- [ ] Interop verified in both directions with byte-comparison of delivered files, and the negotiated `ack` observed. **Not done — the loopback interop test is unwritten.**
+- [x] Toolchain-absent path exercised: `run_cargo` skips with a clear message and returns 0; `WIREHOP_REQUIRE_RUST=1` returns 2.
 
 ## Progress Log
 
+- 2026-08-12 (implementation, part 1): Installed rustup stable; built the `core/` workspace with `wirehop-core` (crypto, frame, protocol, policy, message) and `wirehop-cli`. **The conformance gate is live and green**: the Qt application and the clean-room Rust core agree byte-for-byte on session codes, all 11 negotiation-parsing cases, and canonical JSON. 55 Qt + 41 Rust cases pass; lint and typecheck clean.
+
+  Writing the second implementation surfaced **three spec defects in `PROTOCOL.md`**, exactly the benefit the ADR predicted — all now fixed and pinned by vectors: (1) the session code said only "a BLAKE2b digest … mod 10^6", omitting the 16-byte digest length, the first-8-bytes selection, and the little-endian read; any of the three read differently produces a different code on each side and silently defeats the out-of-band check. (2) File-data framing did not state that boundaries are implied solely by declared sizes, that a sender never straddles a boundary while a receiver must tolerate one, or that a zero-byte file carries no data frames at all. (3) "Absent or malformed fields ⇒ version 0 with no capabilities" read as though a bad version voids caps; both implementations in fact degrade the two fields independently, so a peer may be version 0 *with* `ack`. Also documented receiver validation bounds and the canonical-JSON rule the vectors depend on.
+
+  One behavior-preserving production change: `Crypto::sessionKeyDigest()` now delegates to a new static `Crypto::sessionCodeForKey()` so the derivation can be pinned against fixed keys instead of a live handshake.
+
+  **Remaining for M0:** the loopback interop test (Rust CLI ↔ Qt session, both directions) and the `ARCHITECTURE.md` update. Everything else in this plan is done and verified.
 - 2026-08-12: Plan created after the owner chose the research report's main line (Rust core + native shells) over the report's own §5 correction note, with milestone order discovery → performance → security → LocalSend. Recorded the architecture decision in `docs/decisions/2026-08-12-rust-core-architecture.md`, including the consequence that UniFFI does not bind C++ and therefore the Qt app is an interop peer rather than a consumer of the core. Implementation not started.
 
 ## Open Questions
 
-- Repository layout: single repo (`core/` beside `WireHop/`) is assumed. A separate repo would decouple release cadence at the cost of losing the single-command interop gate — confirm before the crate lands.
-- Minimum supported Rust version and whether to vendor dependencies for offline/CI reproducibility.
-- Whether the golden vectors live under `docs/references/` (spec-adjacent, human-reviewable) or `tests/fixtures/` (test-adjacent). Assumed spec-adjacent, since their purpose is to make the spec executable for future platform implementations.
+- Minimum supported Rust version: currently unpinned beyond `stable`. Pin once a shell needs a specific version.
+- Whether to vendor dependencies for offline/reproducible CI builds.
+
+Resolved during implementation: repository layout is a single repo (`core/` beside `WireHop/`), and the fixture lives spec-adjacent at `docs/references/protocol-vectors.json`.
 
 ## Completion Notes
 

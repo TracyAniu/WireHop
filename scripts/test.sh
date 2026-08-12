@@ -22,3 +22,4 @@ fi
 (cd "$TEST_BUILD_DIR" && "$qmake_bin" "${qmake_args[@]}")
 make -C "$TEST_BUILD_DIR" -j"$(build_jobs)"
 "$TEST_BUILD_DIR/wirehop_tests" -txt
+run_cargo test
