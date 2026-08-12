@@ -205,6 +205,233 @@
     }
   ],
   "discovery_request": "{\"request\":true}",
+  "dnssd_instance_names": [
+    {
+      "device_name": "MacBook",
+      "instance": "MacBook"
+    },
+    {
+      "device_name": "MacBook",
+      "instance": "MacBook (2)"
+    },
+    {
+      "device_name": "MacBook",
+      "instance": "MacBook (17)"
+    },
+    {
+      "device_name": "Mac (work)",
+      "instance": "Mac (work)"
+    },
+    {
+      "device_name": "Mac ()",
+      "instance": "Mac ()"
+    },
+    {
+      "device_name": "(2)",
+      "instance": "(2)"
+    },
+    {
+      "device_name": "测试设备",
+      "instance": "测试设备 (3)"
+    }
+  ],
+  "dnssd_service_type": "_wirehop._tcp",
+  "dnssd_txt": [
+    {
+      "expected": {
+        "caps": [
+          "ack"
+        ],
+        "device_name": "MacBook",
+        "device_type": "macos",
+        "kind": "advertisement",
+        "port": 52638,
+        "protocol_version": 1
+      },
+      "instance": "MacBook",
+      "name": "current",
+      "port": 52638,
+      "txt": [
+        [
+          "v",
+          "1"
+        ],
+        [
+          "caps",
+          "ack"
+        ],
+        [
+          "type",
+          "macos"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [
+          "ack"
+        ],
+        "device_name": "MacBook",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 52638,
+        "protocol_version": 1
+      },
+      "instance": "MacBook",
+      "name": "upper-keys",
+      "port": 52638,
+      "txt": [
+        [
+          "V",
+          "1"
+        ],
+        [
+          "CAPS",
+          "ack"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "Bare",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 52638,
+        "protocol_version": 0
+      },
+      "instance": "Bare",
+      "name": "bare",
+      "port": 52638,
+      "txt": []
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "iPhone",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 52638,
+        "protocol_version": 1
+      },
+      "instance": "iPhone (2)",
+      "name": "conflict-suffix",
+      "port": 52638,
+      "txt": [
+        [
+          "v",
+          "1"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 5,
+        "protocol_version": 1
+      },
+      "instance": "Peer",
+      "name": "unknown-key",
+      "port": 5,
+      "txt": [
+        [
+          "v",
+          "1"
+        ],
+        [
+          "future",
+          "x"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 5,
+        "protocol_version": 0
+      },
+      "instance": "Peer",
+      "name": "bad-version",
+      "port": 5,
+      "txt": [
+        [
+          "v",
+          "one"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 5,
+        "protocol_version": 0
+      },
+      "instance": "Peer",
+      "name": "caps-empty-entry",
+      "port": 5,
+      "txt": [
+        [
+          "caps",
+          "ack,,resume"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 5,
+        "protocol_version": 0
+      },
+      "instance": "Peer",
+      "name": "caps-oversized",
+      "port": 5,
+      "txt": [
+        [
+          "caps",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "kind": "rejected"
+      },
+      "instance": "Peer",
+      "name": "zero-port",
+      "port": 0,
+      "txt": []
+    },
+    {
+      "expected": {
+        "kind": "rejected"
+      },
+      "instance": "",
+      "name": "empty-instance",
+      "port": 5,
+      "txt": []
+    },
+    {
+      "expected": {
+        "kind": "rejected"
+      },
+      "instance": "evil‮name",
+      "name": "bidi-instance",
+      "port": 5,
+      "txt": []
+    }
+  ],
   "negotiation_parsing": [
     {
       "expected_ack_negotiated": true,

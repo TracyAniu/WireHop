@@ -27,6 +27,26 @@ Advertisement:
 - Datagrams larger than **4096 bytes** are dropped before parsing, and a datagram from one of the host's own addresses is ignored so a device does not discover itself.
 - Peers should be aged out on a last-seen basis rather than kept until an explicit `port: 0`: a device that loses power or leaves the network never sends one. (The Rust core implements this; the Qt baseline currently does not.)
 
+## Discovery over DNS-SD (complementary channel)
+
+Subnet broadcast above is the primary channel. DNS-SD/mDNS is a second one, because some access points filter custom multicast groups while giving port 5353 special treatment for AirPlay and AirPrint — and because it is the only channel available on iOS (see below).
+
+- **Service type:** `_wirehop._tcp`, in the `local.` domain. The SRV record carries the transfer port; there is no separate "not available" encoding, because a device that is not discoverable simply does not register the service.
+- **Instance name:** the device name, subject to the same validation as `device_name` elsewhere (1–255 UTF-8 bytes, no Unicode control or bidirectional-override characters). mDNS resolves collisions by appending ` (2)`, ` (3)`, … — a browsing implementation must accept those and must not assume instance names are unique or stable.
+- **TXT records:**
+
+  | Key | Value |
+  | --- | --- |
+  | `v` | Protocol version, decimal. Absent or unparsable ⇒ 0, exactly as for the datagram field. |
+  | `caps` | Comma-separated capability identifiers, same bounds as the JSON form: at most 32 entries, each 1–32 UTF-8 bytes. Any violation discards the whole list. |
+  | `type` | Device type string, advisory. |
+
+  Unknown keys are ignored. Every value is untrusted input, bounded identically to the datagram fields, and none of it may gate a security decision.
+
+- A peer discovered over both channels is **one peer**: implementations key their list on the resolved IP address so the two channels merge rather than duplicate.
+
+**Apple platforms must use the system Bonjour API** (`NWBrowser`/`NWListener`), not a self-implemented responder. Since iOS 14, an app that sends or receives multicast itself — which includes binding `224.0.0.251:5353` and joining the group, as a bundled mDNS library does — requires the `com.apple.developer.networking.multicast` entitlement, granted only by application to Apple. Bonjour needs no entitlement because the system daemon performs the multicast on the app's behalf. This is a deployment constraint, not a wire-format one: both transports must produce and consume exactly the records above.
+
 ## Transfer session (one TCP connection)
 
 1. **Key exchange.** Each side immediately sends its raw 32-byte X25519 public key, with no length prefix or preamble of any kind — a peer reads exactly 32 bytes, so nothing may precede them. Shared session key = `crypto_scalarmult(secret, peer_public)`, used directly as the 32-byte AEAD key with no KDF applied.

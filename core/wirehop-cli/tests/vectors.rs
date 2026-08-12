@@ -234,3 +234,72 @@ fn discovery_parsing_matches_the_fixture() {
         }
     }
 }
+
+#[test]
+fn dnssd_vectors_match_the_fixture() {
+    let v = fixture();
+    assert_eq!(
+        v["dnssd_service_type"].as_str().unwrap(),
+        wirehop_core::dnssd::SERVICE_TYPE
+    );
+
+    for case in v["dnssd_instance_names"].as_array().unwrap() {
+        assert_eq!(
+            wirehop_core::dnssd::device_name_from_instance(case["instance"].as_str().unwrap()),
+            case["device_name"].as_str().unwrap(),
+            "instance {}",
+            case["instance"]
+        );
+    }
+
+    for case in v["dnssd_txt"].as_array().unwrap() {
+        let name = case["name"].as_str().unwrap();
+        let txt: Vec<(String, String)> = case["txt"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|pair| {
+                (
+                    pair[0].as_str().unwrap().to_string(),
+                    pair[1].as_str().unwrap().to_string(),
+                )
+            })
+            .collect();
+
+        let actual = wirehop_core::dnssd::advertisement_from_service(
+            case["instance"].as_str().unwrap(),
+            case["port"].as_u64().unwrap() as u16,
+            &txt,
+        );
+        let expected = &case["expected"];
+
+        match expected["kind"].as_str().unwrap() {
+            "rejected" => assert!(actual.is_none(), "case {name} should be rejected"),
+            _ => {
+                let ad = actual.unwrap_or_else(|| panic!("case {name} should resolve"));
+                assert_eq!(
+                    ad.device_name,
+                    expected["device_name"].as_str().unwrap(),
+                    "case {name}"
+                );
+                assert_eq!(
+                    u64::from(ad.port),
+                    expected["port"].as_u64().unwrap(),
+                    "case {name}"
+                );
+                assert_eq!(
+                    ad.protocol_version,
+                    expected["protocol_version"].as_i64().unwrap(),
+                    "case {name}"
+                );
+                let expected_caps: Vec<&str> = expected["caps"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|c| c.as_str().unwrap())
+                    .collect();
+                assert_eq!(ad.caps, expected_caps, "case {name}");
+            }
+        }
+    }
+}

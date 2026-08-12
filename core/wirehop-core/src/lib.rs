@@ -16,6 +16,7 @@
 
 pub mod crypto;
 pub mod discovery;
+pub mod dnssd;
 pub mod frame;
 pub mod identity;
 pub mod message;

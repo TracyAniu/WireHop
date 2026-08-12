@@ -8,6 +8,7 @@
 use std::process::ExitCode;
 
 use wirehop_core::discovery;
+use wirehop_core::dnssd;
 use wirehop_core::message::{self, FileMetadata, Metadata};
 use wirehop_core::protocol;
 
@@ -37,6 +38,9 @@ fn main() -> ExitCode {
 
 mod vectors {
     use super::*;
+
+    /// One resolved-service fixture case: name, instance, port, TXT pairs.
+    type DnssdCase<'a> = (&'a str, &'a str, u16, Vec<(&'a str, &'a str)>);
     use serde_json::{json, Map, Value};
     use wirehop_core::crypto::Crypto;
 
@@ -255,6 +259,88 @@ mod vectors {
             .collect()
     }
 
+    /// Resolved-service cases, the executable target for a Bonjour-backed
+    /// shell: given an instance name, port, and TXT set, this is the peer the
+    /// core must produce.
+    fn dnssd_txt_cases() -> Vec<Value> {
+        let long_cap = "a".repeat(protocol::MAX_CAP_BYTES + 1);
+        let cases: Vec<DnssdCase> = vec![
+            (
+                "current",
+                "MacBook",
+                52638,
+                vec![("v", "1"), ("caps", "ack"), ("type", "macos")],
+            ),
+            // DNS-SD keys are case-insensitive.
+            (
+                "upper-keys",
+                "MacBook",
+                52638,
+                vec![("V", "1"), ("CAPS", "ack")],
+            ),
+            // No TXT at all is a legacy peer, not a failure.
+            ("bare", "Bare", 52638, vec![]),
+            ("conflict-suffix", "iPhone (2)", 52638, vec![("v", "1")]),
+            ("unknown-key", "Peer", 5, vec![("v", "1"), ("future", "x")]),
+            ("bad-version", "Peer", 5, vec![("v", "one")]),
+            ("caps-empty-entry", "Peer", 5, vec![("caps", "ack,,resume")]),
+            ("caps-oversized", "Peer", 5, vec![("caps", &long_cap)]),
+            // Rejections.
+            ("zero-port", "Peer", 0, vec![]),
+            ("empty-instance", "", 5, vec![]),
+            ("bidi-instance", "evil\u{202E}name", 5, vec![]),
+        ];
+
+        cases
+            .into_iter()
+            .map(|(name, instance, port, txt)| {
+                let records: Vec<(String, String)> = txt
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect();
+                let expected = match dnssd::advertisement_from_service(instance, port, &records) {
+                    None => json!({"kind": "rejected"}),
+                    Some(ad) => json!({
+                        "kind": "advertisement",
+                        "device_name": ad.device_name,
+                        "device_type": ad.device_type,
+                        "port": ad.port,
+                        "protocol_version": ad.protocol_version,
+                        "caps": ad.caps,
+                    }),
+                };
+                json!({
+                    "name": name,
+                    "instance": instance,
+                    "port": port,
+                    "txt": txt.iter().map(|(k, v)| json!([k, v])).collect::<Vec<_>>(),
+                    "expected": expected,
+                })
+            })
+            .collect()
+    }
+
+    /// The mDNS conflict-suffix rule, isolated.
+    fn dnssd_instance_cases() -> Vec<Value> {
+        [
+            "MacBook",
+            "MacBook (2)",
+            "MacBook (17)",
+            "Mac (work)",
+            "Mac ()",
+            "(2)",
+            "测试设备 (3)",
+        ]
+        .into_iter()
+        .map(|instance| {
+            json!({
+                "instance": instance,
+                "device_name": dnssd::device_name_from_instance(instance),
+            })
+        })
+        .collect()
+    }
+
     pub fn render() -> String {
         let metadata: Vec<Value> = metadata_cases()
             .into_iter()
@@ -312,6 +398,9 @@ mod vectors {
             json!(advertisement_cases()),
         );
         root.insert("discovery_parsing".into(), json!(discovery_parsing_cases()));
+        root.insert("dnssd_service_type".into(), json!(dnssd::SERVICE_TYPE));
+        root.insert("dnssd_txt".into(), json!(dnssd_txt_cases()));
+        root.insert("dnssd_instance_names".into(), json!(dnssd_instance_cases()));
 
         serde_json::to_string_pretty(&Value::Object(root)).expect("fixture serializes")
     }
