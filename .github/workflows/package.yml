@@ -39,7 +39,8 @@ jobs:
 
       - name: Package
         run: |
-          ./linuxdeploy-x86_64.AppImage --appdir AppDir -e WireHop/WireHop -d misc/WireHop.desktop -i WireHop/icons/app.svg --icon-filename wirehop -p qt -o appimage
+          install -m 755 WireHop/WireHop WireHop/wirehop
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir -e WireHop/wirehop -d misc/WireHop.desktop -i WireHop/icons/app.svg --icon-filename wirehop -p qt -o appimage
           mv WireHop*.AppImage WireHop-linux.AppImage
 
       - name: Upload
@@ -50,7 +51,7 @@ jobs:
 
   package_windows:
     name: Windows Package
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -59,27 +60,28 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: '5.15.2'
+          arch: 'win64_msvc2019_64'
 
       - name: Install libsodium
         shell: bash
         run: |
-          curl -LO https://download.libsodium.org/libsodium/releases/libsodium-1.0.18-stable-msvc.zip
-          unzip libsodium-1.0.18-stable-msvc.zip
+          curl -fLO https://github.com/jedisct1/libsodium/releases/download/1.0.22-RELEASE/libsodium-1.0.22-msvc.zip
+          unzip libsodium-1.0.22-msvc.zip
 
       - name: Configure
         shell: bash
         working-directory: ./WireHop
         run: |
           echo "INCLUDEPATH += ../libsodium/include" >> WireHop.pro
-          echo "LIBS += -L../libsodium/x64/Release/v142/dynamic -llibsodium" >> WireHop.pro
+          echo "LIBS += -L../libsodium/x64/Release/v143/dynamic -llibsodium" >> WireHop.pro
 
       - name: Build
         shell: cmd
         working-directory: ./WireHop
         run: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          qmake -tp vc
-          msbuild -m -p:Configuration=Release .
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          qmake
+          nmake release
 
       - name: Package
         shell: bash
@@ -89,7 +91,7 @@ jobs:
           cd WireHop
           mv ../release/WireHop.exe .
           windeployqt WireHop.exe
-          cp ../../libsodium/x64/Release/v142/dynamic/libsodium.dll .
+          cp ../../libsodium/x64/Release/v143/dynamic/libsodium.dll .
           curl -LO https://aka.ms/vs/16/release/vc_redist.x64.exe
 
       - name: Zip
@@ -103,32 +105,29 @@ jobs:
           path: WireHop/WireHop-win.zip
 
   package_macos:
-    name: macOS Package
+    name: macOS arm64 Package
     runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '5.15.2'
-
-      - name: Install libsodium
-        run: brew install libsodium
+      - name: Install Qt and libsodium
+        run: |
+          brew install qt@5 libsodium
+          echo "$(brew --prefix qt@5)/bin" >> "$GITHUB_PATH"
 
       - name: Build
-        working-directory: ./WireHop
-        run: qmake && make -j$(sysctl -n hw.ncpu)
+        run: ./scripts/typecheck.sh
 
       - name: Package
-        working-directory: ./WireHop
         run: |
-          macdeployqt WireHop.app
-          zip -r9 --symlinks WireHop-macos.zip WireHop.app
+          macdeployqt build-agent/WireHop.app
+          file build-agent/WireHop.app/Contents/MacOS/WireHop | grep -q arm64
+          otool -L build-agent/WireHop.app/Contents/MacOS/WireHop | grep -q '@executable_path/../Frameworks/libsodium'
+          ditto -c -k --sequesterRsrc --keepParent build-agent/WireHop.app WireHop-macos-arm64.zip
 
       - name: Upload
         uses: actions/upload-artifact@v7
         with:
-          name: macOS-Build
-          path: WireHop/WireHop-macos.zip
+          name: macOS-arm64-Build
+          path: WireHop-macos-arm64.zip
