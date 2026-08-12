@@ -32,6 +32,7 @@ This project is derived from the open-source LANDrop 0.4.0 snapshot. Treat this 
 - `./scripts/lint.sh`: check harness shell syntax, JSON, whitespace, and Git diff errors.
 - `./scripts/test.sh`: builds and runs the Qt Test security and transfer-policy regression suite.
 - `./scripts/smoke.sh`: build, launch the native application briefly, and verify it remains running.
+- `./scripts/package-macos.sh`: stage, deploy, ad-hoc sign, verify, launch-check, and zip the macOS package (never run macdeployqt inside the build directory).
 
 The scripts use `build-agent/` by default. Override with `WIREHOP_BUILD_DIR`, `QMAKE_BIN`, or `WIREHOP_JOBS` when needed. Legacy `LANDROP_*` overrides remain accepted for harness compatibility.
 
