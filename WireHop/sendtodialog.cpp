@@ -40,7 +40,7 @@
 
 SendToDialog::SendToDialog(QWidget *parent, const QList<QSharedPointer<QFile>> &files,
                            DiscoveryService &discoveryService) :
-    QDialog(parent), ui(new Ui::SendToDialog), files(files)
+    QDialog(parent), ui(new Ui::SendToDialog), files(files), socket(nullptr)
 {
     ui->setupUi(this);
     setWindowFlag(Qt::WindowStaysOnTopHint);
@@ -109,10 +109,17 @@ void SendToDialog::accept()
     QString addr = ui->addrLineEdit->text();
     bool ok;
     quint16 port = ui->portLineEdit->text().toUShort(&ok);
-    if (!ok) {
+    if (!ok || port == 0) {
         QMessageBox::critical(this, QApplication::applicationName(),
                               tr("Invalid port. Please enter a number between 1 and 65535."));
         return;
+    }
+
+    if (socket) {
+        socket->disconnect(this);
+        socket->abort();
+        socket->deleteLater();
+        socket = nullptr;
     }
 
     socket = new QTcpSocket(this);
@@ -132,9 +139,14 @@ void SendToDialog::accept()
 
 void SendToDialog::socketConnected()
 {
+    if (!socket || sender() != socket)
+        return;
     socketTimeoutTimer.stop();
-    FileTransferSender *sender = new FileTransferSender(nullptr, socket, files);
-    FileTransferDialog *d = new FileTransferDialog(nullptr, sender);
+    QTcpSocket *s = socket;
+    socket = nullptr;
+    s->disconnect(this);
+    FileTransferSender *transferSender = new FileTransferSender(nullptr, s, files);
+    FileTransferDialog *d = new FileTransferDialog(nullptr, transferSender);
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->show();
     done(Accepted);
@@ -142,20 +154,29 @@ void SendToDialog::socketConnected()
 
 void SendToDialog::socketErrorOccurred()
 {
+    if (!socket || sender() != socket)
+        return;
     socketTimeoutTimer.stop();
-    socket->disconnectFromHost();
-    socket->close();
-    socket->deleteLater();
-    QMessageBox::critical(this, QApplication::applicationName(), socket->errorString());
+    QTcpSocket *s = socket;
+    socket = nullptr;
+    s->disconnect(this);
+    QString message = s->errorString();
+    s->abort();
+    s->deleteLater();
+    QMessageBox::critical(this, QApplication::applicationName(), message);
     ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(true);
     setCursor(QCursor(Qt::ArrowCursor));
 }
 
 void SendToDialog::socketTimeout()
 {
-    socket->disconnectFromHost();
-    socket->close();
-    socket->deleteLater();
+    if (!socket)
+        return;
+    QTcpSocket *s = socket;
+    socket = nullptr;
+    s->disconnect(this);
+    s->abort();
+    s->deleteLater();
     QMessageBox::critical(this, QApplication::applicationName(), tr("Connection timed out"));
     ui->buttonBox->button(QDialogButtonBox::Ok)->setEnabled(true);
     setCursor(QCursor(Qt::ArrowCursor));
