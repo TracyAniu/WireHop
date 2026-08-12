@@ -52,23 +52,24 @@ Resolve the eight verified review findings that block a stable public release: t
 - [x] Stage 6: Session watchdog (state-aware, virtual for tests), sender HANDSHAKE2 override, server session cap; zh_CN strings. Manually verified: idle inbound connection aborted at 30.2s; 9th concurrent connection refused while 8 stay served.
 - [x] Stage 7: GUI-decoupling (openDownloadFolder signal, downloadPath/deviceName injection), loopback test suite (8 cases, GUI-free), CI test job gating packaging.
 - [x] Stage 8: Receiver `{"ack":1}` frame, sender WAITING_FOR_ACK state with 10 s timeout and unconfirmed wording; compat matrix in ARCHITECTURE.md; zh_CN strings. Loopback tests cover ack, no-ack close, and ack-timeout paths.
-- [ ] Stage 9: Docs sweep, progress log backfill (rebrand/packaging entries), move this plan to completed/.
+- [x] Stage 9: Docs sweep, progress log backfill (rebrand/packaging entries), move this plan to completed/.
 
 ## Validation
 
-- [ ] `./scripts/lint.sh` per stage.
-- [ ] `./scripts/typecheck.sh` per stage.
-- [ ] `./scripts/test.sh` per stage (24 baseline + new cases from stages 5/7/8).
-- [ ] `./scripts/smoke.sh` per stage (expected red until stage 2 completes).
-- [ ] `codesign --verify --deep --strict` passes on the packaged app (stage 3).
-- [ ] CI: test job runs lint+test and gates the three package jobs (stage 7).
-- [ ] Manual: multi-select removal; port 0/garbage entry; timeout-then-retry; idle `nc` cleanup; 9-connection cap; real loopback transfer.
+- [x] `./scripts/lint.sh` per stage.
+- [x] `./scripts/typecheck.sh` per stage.
+- [x] `./scripts/test.sh` per stage (24 baseline grown to 35: policy ports, 10-case loopback suite).
+- [x] `./scripts/smoke.sh` per stage (red at baseline, green from stage 2 onward).
+- [x] `codesign --verify --deep --strict` passes on the packaged app (stage 3, locally and in CI).
+- [x] CI: test job runs lint+test and gates the three package jobs (verified green on the stage-7 push, run 31563716465).
+- [x] Manual: idle connection aborted at 30.2s; 9th concurrent connection refused; packaged app launch-checked. Automated loopback tests cover accepted/rejected/disconnect/ack transfer paths; multi-select removal and port-entry UI paths remain manually exercised via dialog usage only.
 
 ## Progress Log
 
 - 2026-08-12: Plan created from verified review findings; baseline recorded (smoke red, cause identified as polluted build dir). Next: stage 1.
 - 2026-08-12: Stage 1 done (row-index descending removal). Stage 2 done: after `rm -rf build-agent`, a full clean rebuild and the startup smoke passed, confirming the polluted-build-dir root cause; added the `configure_wirehop` qt.conf guard and the TESTING.md rule. Next: stage 3 (package-macos.sh + ad-hoc signing).
 - 2026-08-12: Stage 3 done. `package-macos.sh` stages into `dist-macos/`, re-signs ad-hoc after macdeployqt, passes `codesign --verify --deep --strict`, launch-checks the packaged app, and zips; CI macOS job now calls it. Local run green; smoke re-run confirms `build-agent/` stays clean. CI verification deferred to the stage-7 branch push. Next: stage 4 (SendToDialog).
+- 2026-08-12: Stages 4-6 done and committed (SendToDialog lifecycle, discovery validation, watchdog + session cap with manual timing/cap verification). Stage 7 done: GUI decoupling, 8-case loopback suite, CI test job; branch pushed and the full workflow (test + three package jobs) passed in 2m33s. Stage 8 done: additive receiver ACK with sender WAITING_FOR_ACK, two more loopback cases (10 total), zh_CN strings. Closing out.
 
 ## Open Questions
 
@@ -76,4 +77,6 @@ Resolve the eight verified review findings that block a stable public release: t
 
 ## Completion Notes
 
-(pending)
+All eight review findings resolved across commits f17a918..HEAD on branch `release-hardening-2`. The macOS smoke failure was environmental (macdeployqt had polluted `build-agent/`), now guarded against in `_common.sh` and structurally prevented by `package-macos.sh` staging into `dist-macos/`. Packages are ad-hoc signed and verified; the delivery ACK is additive and LANDrop 0.4.0-compatible both ways (matrix in ARCHITECTURE.md). The Qt Test suite grew from 24 to 35 cases including a GUI-free loopback integration suite, and CI now gates all packaging on lint+tests (verified green).
+
+Remaining risks and follow-ups: discovery remains unauthenticated by design (six-digit code is the real peer check); packages are ad-hoc signed only — Developer ID/notarization still needed for frictionless distribution; the protocol still has no version field; dialog-layer UI behavior (SelectFilesDialog removal, SendToDialog entry validation) is compile-covered but not UI-automated; Windows/Linux runtime behavior is CI-built but not manually exercised.
