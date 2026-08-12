@@ -50,6 +50,14 @@ Dialog behavior, persistence, real two-machine transfer, and non-macOS runtime b
 
 Use isolated test files and a dedicated temporary download directory. Never overwrite valuable user data during validation.
 
+**Diagnosing "I invoked it and nothing happened" on macOS.** The application is `LSUIElement`: no Dock icon, no window, only a menu-bar item. Three things make a working app look broken, and they are distinguishable without accessibility permissions:
+
+- *The dialog opened behind everything.* An accessory application is outside the normal activation order, so raising a window is not enough — `TrayIcon::sendFiles` calls `activateApplication()` for this reason. Check with `NSWorkspace.frontmostApplication`.
+- *The dialog opened on another display.* Qt places a parentless dialog on the screen under the cursor. Enumerate with `CGGetActiveDisplayList` and compare against the window's `kCGWindowBounds`; a multi-display setup can put it where nobody is looking.
+- *A menu-bar manager hid the icon.* Bartender and similar tools hide new status items by default, and a notched Mac silently drops overflow items.
+
+`CGWindowListCopyWindowInfo` answers "does a window exist, where, and at what layer" without any permission prompt, which makes it the first thing to run — it separates "the app is broken" from "you cannot see it". `NSModalPanelWindowLevel` is layer 8.
+
 ## When to Add Tests
 
 - Every bug fix should gain a regression test when the affected logic can be isolated.

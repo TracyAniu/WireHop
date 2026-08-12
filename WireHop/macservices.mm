@@ -56,3 +56,16 @@ void registerMacServicesProvider(TrayIcon *trayIcon)
     [[NSApplication sharedApplication] setServicesProvider:provider];
     NSUpdateDynamicServices();
 }
+
+void activateApplication()
+{
+    // activateIgnoringOtherApps: is what an accessory application needs; it is
+    // deprecated on macOS 14+ in favour of NSApplication.activate, so prefer
+    // that where available and keep the old call for older systems.
+    NSApplication *app = [NSApplication sharedApplication];
+    if (@available(macOS 14.0, *)) {
+        [app activate];
+    } else {
+        [app activateIgnoringOtherApps:YES];
+    }
+}
