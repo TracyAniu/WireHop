@@ -30,6 +30,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+#include <functional>
+
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QFileDialog>
@@ -106,12 +109,15 @@ void SelectFilesDialog::addButtonClicked()
 void SelectFilesDialog::removeButtonClicked()
 {
     QModelIndexList indexes = ui->filesListView->selectionModel()->selectedIndexes();
-    QList<const QSharedPointer<QFile> *> removeList;
+    QList<int> rows;
     foreach (const QModelIndex &i, indexes) {
-        removeList.append(&files.at(i.row()));
+        if (!rows.contains(i.row()))
+            rows.append(i.row());
     }
-    foreach (const QSharedPointer<QFile> *fp, removeList) {
-        files.removeOne(*fp);
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+    foreach (int row, rows) {
+        if (row >= 0 && row < files.size())
+            files.removeAt(row);
     }
     updateFileStringListModel();
 }
