@@ -31,6 +31,8 @@ private slots:
     void localNegotiationFieldsMatchTheFixture();
     void canonicalMetadataIsParsedIdentically();
     void canonicalResponsesAreParsedIdentically();
+    void discoveryDatagramsMatchTheFixture();
+    void discoveryParsingMatchesTheFixture();
 private:
     QJsonObject vectors;
 };
@@ -162,6 +164,55 @@ void ProtocolVectorsTest::canonicalResponsesAreParsedIdentically()
     QVERIFY(ackDoc.isObject());
     QCOMPARE(ackDoc.object().value("ack").toDouble(), 1.0);
     QCOMPARE(QJsonDocument(ackDoc.object()).toJson(QJsonDocument::Compact), ack);
+}
+
+void ProtocolVectorsTest::discoveryDatagramsMatchTheFixture()
+{
+    // Construction must be byte-identical across implementations: Qt sorts
+    // object keys, and the Rust core inserts them in the same lexicographic
+    // order, which is the canonical form PROTOCOL.md defines.
+    QCOMPARE(Protocol::buildDiscoveryRequest(),
+             vectors.value("discovery_request").toString().toUtf8());
+
+    QJsonArray ads = vectors.value("discovery_advertisements").toArray();
+    QVERIFY(!ads.isEmpty());
+    foreach (const QJsonValue &entry, ads) {
+        QJsonObject obj = entry.toObject();
+        QByteArray built = Protocol::buildDiscoveryAdvertisement(
+                obj.value("device_name").toString(),
+                obj.value("device_type").toString(),
+                static_cast<quint16>(obj.value("port").toInt()));
+        QCOMPARE(built, obj.value("canonical_json").toString().toUtf8());
+    }
+}
+
+void ProtocolVectorsTest::discoveryParsingMatchesTheFixture()
+{
+    QJsonArray cases = vectors.value("discovery_parsing").toArray();
+    QVERIFY(!cases.isEmpty());
+
+    foreach (const QJsonValue &entry, cases) {
+        QJsonObject obj = entry.toObject();
+        QString name = obj.value("name").toString();
+        QByteArray input = obj.value("input").toString().toUtf8();
+        QJsonObject expected = obj.value("expected").toObject();
+        QString kind = expected.value("kind").toString();
+
+        Protocol::Advertisement ad;
+        Protocol::DatagramKind actual = Protocol::parseDiscoveryDatagram(input, &ad);
+
+        if (kind == QStringLiteral("request")) {
+            QVERIFY2(actual == Protocol::DiscoveryRequest, qPrintable(name));
+        } else if (kind == QStringLiteral("advertisement")) {
+            QVERIFY2(actual == Protocol::DiscoveryAdvertisement, qPrintable(name));
+            QVERIFY2(ad.deviceName == expected.value("device_name").toString(), qPrintable(name));
+            QVERIFY2(ad.deviceType == expected.value("device_type").toString(), qPrintable(name));
+            QVERIFY2(ad.port == static_cast<quint16>(expected.value("port").toInt()),
+                     qPrintable(name));
+        } else {
+            QVERIFY2(actual == Protocol::InvalidDatagram, qPrintable(name));
+        }
+    }
 }
 
 int runProtocolVectorsTest(int argc, char *argv[])

@@ -15,7 +15,17 @@ Advertisement:
  "protocol_version": 1, "caps": ["ack"]}
 ```
 
-`port` 0 means "not discoverable". `protocol_version` and `caps` are **untrusted hints** (discovery is unauthenticated UDP); they must never gate security or behavior decisions — the in-session values below are authoritative. Receivers must ignore unknown keys.
+`protocol_version` and `caps` are **untrusted hints** (discovery is unauthenticated UDP); they must never gate security or behavior decisions — the in-session values below are authoritative. Receivers must ignore unknown keys.
+
+**Datagram rules** (normative):
+
+- `request` must be present and a **boolean**. A datagram without it, or with a non-boolean value, is dropped. `true` selects the request form and every other field is ignored; `false` selects the advertisement form.
+- A request is answered by sending an advertisement **unicast back to the source address and port** — not by broadcasting. This request/response exchange is what makes discovery self-healing: a dropped announcement costs nothing because the next refresh asks again.
+- An advertisement must carry a `device_name` **string** and a `port` **number**; either missing or of the wrong type drops the datagram. `device_name` is then subject to the same validation as in metadata (1–255 UTF-8 bytes, no Unicode control or bidirectional-override characters), and `port` must be an integer in 0–65535. A violation drops the datagram rather than clamping.
+- **`port: 0` means "I am not available"** — a peer that has turned off discoverability still answers requests, with port 0. A receiver must treat it as a removal from the peer list, not as a peer on port 0.
+- **Peer identity is the source IP address.** `device_name` is display text: it may change between advertisements for the same peer, and two peers may share a name. Nothing in discovery is authenticated, so identity here is a convenience for list-keeping only.
+- Datagrams larger than **4096 bytes** are dropped before parsing, and a datagram from one of the host's own addresses is ignored so a device does not discover itself.
+- Peers should be aged out on a last-seen basis rather than kept until an explicit `port: 0`: a device that loses power or leaves the network never sends one. (The Rust core implements this; the Qt baseline currently does not.)
 
 ## Transfer session (one TCP connection)
 

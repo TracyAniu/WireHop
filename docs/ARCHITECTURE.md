@@ -13,7 +13,7 @@ The repository now holds **two independent implementations of the same wire prot
 | Language | C++11 / Qt 5 | Rust |
 | Role | the shipping desktop application, and the interoperability reference | future implementation for all platforms, consumed by native shells |
 | Crypto | libsodium | pure-Rust `blake2`, `chacha20poly1305`, `x25519-dalek` |
-| Status | complete for v1 | v1 protocol and blocking sessions; no discovery, no UI |
+| Status | complete for v1 | v1 protocol, blocking sessions, discovery codec/peer table/service; no UI |
 
 They share **no code**, by decision (`docs/decisions/2026-08-12-rust-core-architecture.md`). UniFFI binds Swift and Kotlin but not C++, so the Qt application is never a consumer of the core — the two are peers that must interoperate on the wire. The core is therefore written clean-room from `docs/references/PROTOCOL.md`, which makes the specification (not shared code) the load-bearing asset and turns any ambiguity in it into a defect that surfaces during implementation rather than in the field.
 
@@ -52,14 +52,15 @@ Both run in `./scripts/test.sh` and are gated in CI by `WIREHOP_REQUIRE_RUST=1`.
 - `main.cpp` owns application metadata, localization setup, top-level error handling, and event-loop startup.
 - `TrayIcon` composes application-level services and opens the user workflows.
 - `Settings` is the only abstraction over persistent `QSettings` keys.
-- `DiscoveryService` owns UDP discovery and emits peer endpoints; it must not initiate transfers or own UI state.
+- `DiscoveryService` owns the UDP socket, the datagram size bound, self-address filtering, and the choice of send targets; it must not initiate transfers or own UI state. Datagram construction and parsing live in `Protocol` so they are testable without a GUI — `discoveryservice.cpp` pulls in `QMessageBox` and cannot link into the test suite.
+- Peer-list lifetime differs between the implementations by design: the Qt side keeps a peer until it announces `port: 0` (`SendToDialog::newHost`), while `core`'s `PeerTable` also ages entries out on a last-seen basis. Local list-keeping is not a wire concern.
 - `FileTransferServer` accepts TCP connections and creates receiver sessions/dialogs.
 - `FileTransferSession` owns shared framing, key negotiation, encryption/decryption, state, and transfer signals.
 - `FileTransferSender` and `FileTransferReceiver` implement their respective metadata and byte-stream state machines. They receive the device name and download path through their constructors and stay QtCore/QtNetwork-only so the loopback test suite can link them; opening the download folder is a signal handled by the dialog layer.
 - `FileTransferPolicy` is the reusable boundary for portable leaf filenames, transfer-size limits, collision naming, and non-overwriting temporary-file commits.
 - Dialog classes translate user actions and session signals into UI. Generated `ui_*.h` files come from the checked-in `.ui` forms and must not be edited directly.
 - `Crypto` is the libsodium boundary. Protocol or cryptographic changes require explicit compatibility and security review.
-- `core/wirehop-core` mirrors this layering in Rust: `crypto` (key exchange, AEAD, session code), `frame` (length-prefixed framing), `message` (metadata/response/ack plus canonical JSON), `policy` (untrusted-input bounds), `store` (non-overwriting commit), `session` (blocking sender/receiver state machines). `core/wirehop-cli` is a GUI-free driver used by the conformance and interop gates.
+- `core/wirehop-core` mirrors this layering in Rust: `crypto` (key exchange, AEAD, session code), `frame` (length-prefixed framing), `message` (metadata/response/ack plus canonical JSON), `policy` (untrusted-input bounds), `store` (non-overwriting commit), `session` (blocking sender/receiver state machines), `discovery` (datagram codec, peer table with last-seen expiry, UDP service). `core/wirehop-cli` is a GUI-free driver used by the conformance and interop gates.
 - `Protocol` (`protocol.h/.cpp`) owns the wire version constant, capability identifiers, and bounded parsing of peer negotiation fields (see `docs/references/PROTOCOL.md`). Sessions adopt peer version/capabilities only from decrypted frames; the copies in discovery datagrams are untrusted hints.
 
 ## Data Flow

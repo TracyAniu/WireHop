@@ -41,4 +41,33 @@ int parseVersion(const QJsonValue &value);
 // yields the legacy result: an empty set.
 QSet<QString> parseCaps(const QJsonValue &value);
 
+// --- Discovery datagrams (UDP 52637) ---------------------------------------
+// See docs/references/PROTOCOL.md, "Discovery". These live here, rather than
+// inside DiscoveryService, so they can be linked and tested without a GUI.
+
+struct Advertisement {
+    QString deviceName;
+    QString deviceType;
+    quint16 port = 0;
+    int protocolVersion = 0;
+    QSet<QString> caps;
+};
+
+enum DatagramKind {
+    // Malformed, or failing the bounded validation: drop it.
+    InvalidDatagram,
+    // "Report in" — answer with a unicast advertisement to the source.
+    DiscoveryRequest,
+    // A peer describing itself. port == 0 means "I am not available".
+    DiscoveryAdvertisement
+};
+
+// Classifies and validates one datagram payload. Fills *out only when the
+// result is DiscoveryAdvertisement.
+DatagramKind parseDiscoveryDatagram(const QByteArray &data, Advertisement *out);
+
+QByteArray buildDiscoveryRequest();
+QByteArray buildDiscoveryAdvertisement(const QString &deviceName, const QString &deviceType,
+                                       quint16 port);
+
 }

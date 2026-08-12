@@ -3,8 +3,11 @@
 #include <algorithm>
 
 #include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QStringList>
 
+#include "filetransferpolicy.h"
 #include "protocol.h"
 
 namespace Protocol {
@@ -72,6 +75,71 @@ QSet<QString> parseCaps(const QJsonValue &value)
         caps.insert(cap);
     }
     return caps;
+}
+
+DatagramKind parseDiscoveryDatagram(const QByteArray &data, Advertisement *out)
+{
+    // Bounded here as well as at the socket, so every caller of this parser
+    // inherits the limit rather than having to remember it. DiscoveryService
+    // still checks first to avoid buffering an oversized datagram at all.
+    if (data.isEmpty() || data.size() > FileTransferPolicy::MAX_DISCOVERY_DATAGRAM_BYTES)
+        return InvalidDatagram;
+
+    QJsonDocument json = QJsonDocument::fromJson(data);
+    if (!json.isObject())
+        return InvalidDatagram;
+    QJsonObject obj = json.object();
+
+    // "request" is the discriminator and must be a real boolean; a missing or
+    // mistyped value is not a request and not an advertisement.
+    QJsonValue request = obj.value("request");
+    if (!request.isBool())
+        return InvalidDatagram;
+    if (request.toBool())
+        return DiscoveryRequest;
+
+    QJsonValue deviceName = obj.value("device_name");
+    QJsonValue remotePort = obj.value("port");
+    if (!deviceName.isString() || !remotePort.isDouble())
+        return InvalidDatagram;
+
+    quint16 port;
+    if (!FileTransferPolicy::parsePort(remotePort.toDouble(), &port))
+        return InvalidDatagram;
+    QString deviceNameStr = deviceName.toString();
+    if (!FileTransferPolicy::isSafeDeviceName(deviceNameStr))
+        return InvalidDatagram;
+
+    if (out) {
+        out->deviceName = deviceNameStr;
+        out->deviceType = obj.value("device_type").toString();
+        out->port = port;
+        // Untrusted hints; recorded but never used to gate behavior.
+        out->protocolVersion = parseVersion(obj.value("protocol_version"));
+        out->caps = parseCaps(obj.value("caps"));
+    }
+    return DiscoveryAdvertisement;
+}
+
+QByteArray buildDiscoveryRequest()
+{
+    QJsonObject obj;
+    obj.insert("request", true);
+    return QJsonDocument(obj).toJson(QJsonDocument::Compact);
+}
+
+QByteArray buildDiscoveryAdvertisement(const QString &deviceName, const QString &deviceType,
+                                       quint16 port)
+{
+    QJsonObject obj;
+    obj.insert("request", false);
+    obj.insert("device_name", deviceName);
+    obj.insert("device_type", deviceType);
+    obj.insert("port", static_cast<int>(port));
+    // Untrusted hint for peer-list use; the authoritative negotiation happens
+    // inside the encrypted transfer session.
+    insertNegotiationFields(obj);
+    return QJsonDocument(obj).toJson(QJsonDocument::Compact);
 }
 
 }

@@ -7,6 +7,7 @@
 
 use std::process::ExitCode;
 
+use wirehop_core::discovery;
 use wirehop_core::message::{self, FileMetadata, Metadata};
 use wirehop_core::protocol;
 
@@ -147,6 +148,113 @@ mod vectors {
             .collect()
     }
 
+    fn advertisement_cases() -> Vec<Value> {
+        [
+            ("MacBook", "macos", 52638u16),
+            // port 0 announces "not available", which peers treat as removal.
+            ("Hidden", "windows", 0),
+            ("测试设备", "linux", 1),
+        ]
+        .into_iter()
+        .map(|(name, kind, port)| {
+            json!({
+                "device_name": name,
+                "device_type": kind,
+                "port": port,
+                "canonical_json":
+                    String::from_utf8(discovery::build_advertisement(name, kind, port)).unwrap(),
+            })
+        })
+        .collect()
+    }
+
+    /// Inputs are raw JSON text so both implementations parse identical bytes.
+    fn discovery_parsing_cases() -> Vec<Value> {
+        let long_pad = "x".repeat(5000);
+        let cases: Vec<(&str, String)> = vec![
+            ("request", json!({"request": true}).to_string()),
+            (
+                "advertisement",
+                json!({"request": false, "device_name": "Peer", "port": 52638}).to_string(),
+            ),
+            (
+                "advertisement-unavailable",
+                json!({"request": false, "device_name": "Peer", "port": 0}).to_string(),
+            ),
+            (
+                "advertisement-unknown-key",
+                json!({"request": false, "device_name": "Peer", "port": 5, "future": [1, 2]})
+                    .to_string(),
+            ),
+            ("not-json", "not json at all".to_string()),
+            ("not-object", json!([1, 2, 3]).to_string()),
+            (
+                "request-missing",
+                json!({"device_name": "a", "port": 1}).to_string(),
+            ),
+            ("request-string", json!({"request": "true"}).to_string()),
+            ("request-number", json!({"request": 1}).to_string()),
+            (
+                "name-missing",
+                json!({"request": false, "port": 1}).to_string(),
+            ),
+            (
+                "name-not-string",
+                json!({"request": false, "device_name": 42, "port": 1}).to_string(),
+            ),
+            (
+                "name-empty",
+                json!({"request": false, "device_name": "", "port": 1}).to_string(),
+            ),
+            (
+                "name-bidi-override",
+                json!({"request": false, "device_name": "evil\u{202E}name", "port": 1}).to_string(),
+            ),
+            (
+                "port-missing",
+                json!({"request": false, "device_name": "a"}).to_string(),
+            ),
+            (
+                "port-string",
+                json!({"request": false, "device_name": "a", "port": "1"}).to_string(),
+            ),
+            (
+                "port-negative",
+                json!({"request": false, "device_name": "a", "port": -1}).to_string(),
+            ),
+            (
+                "port-too-large",
+                json!({"request": false, "device_name": "a", "port": 70000}).to_string(),
+            ),
+            (
+                "port-fractional",
+                json!({"request": false, "device_name": "a", "port": 1.5}).to_string(),
+            ),
+            (
+                "oversized",
+                json!({"request": false, "device_name": "a", "port": 1, "pad": long_pad})
+                    .to_string(),
+            ),
+        ];
+
+        cases
+            .into_iter()
+            .map(|(name, input)| {
+                let expected = match discovery::parse_datagram(input.as_bytes()) {
+                    None => json!({"kind": "invalid"}),
+                    Some(discovery::Datagram::Request) => json!({"kind": "request"}),
+                    Some(discovery::Datagram::Advertisement(ad)) => json!({
+                        "kind": "advertisement",
+                        "device_name": ad.device_name,
+                        "device_type": ad.device_type,
+                        "port": ad.port,
+                    }),
+                };
+                json!({"name": name, "input": input, "expected": expected})
+            })
+            .collect()
+    }
+
     pub fn render() -> String {
         let metadata: Vec<Value> = metadata_cases()
             .into_iter()
@@ -195,6 +303,15 @@ mod vectors {
             json!(String::from_utf8(message::ack_to_canonical_json()).unwrap()),
         );
         root.insert("negotiation_parsing".into(), json!(negotiation_cases()));
+        root.insert(
+            "discovery_request".into(),
+            json!(String::from_utf8(discovery::build_request()).unwrap()),
+        );
+        root.insert(
+            "discovery_advertisements".into(),
+            json!(advertisement_cases()),
+        );
+        root.insert("discovery_parsing".into(), json!(discovery_parsing_cases()));
 
         serde_json::to_string_pretty(&Value::Object(root)).expect("fixture serializes")
     }

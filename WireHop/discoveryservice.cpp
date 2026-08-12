@@ -31,8 +31,6 @@
  */
 
 #include <QApplication>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QMessageBox>
 #include <QNetworkInterface>
 
@@ -61,9 +59,7 @@ void DiscoveryService::start(quint16 serverPort)
 
 void DiscoveryService::refresh()
 {
-    QJsonObject obj;
-    obj.insert("request", true);
-    QByteArray json = QJsonDocument(obj).toJson(QJsonDocument::Compact);
+    QByteArray json = Protocol::buildDiscoveryRequest();
     foreach (const QHostAddress &addr, broadcastAddresses()) {
         socket.writeDatagram(json, addr, DISCOVERY_PORT);
     }
@@ -71,15 +67,11 @@ void DiscoveryService::refresh()
 
 void DiscoveryService::sendInfo(const QHostAddress &addr, quint16 port)
 {
-    QJsonObject obj;
-    obj.insert("request", false);
-    obj.insert("device_name", Settings::deviceName());
-    obj.insert("device_type", QSysInfo::productType());
-    obj.insert("port", Settings::discoverable() ? serverPort : 0);
-    // Untrusted hint for future peer-list use; the authoritative negotiation
-    // happens inside the encrypted transfer session.
-    Protocol::insertNegotiationFields(obj);
-    socket.writeDatagram(QJsonDocument(obj).toJson(QJsonDocument::Compact), addr, port);
+    // port 0 advertises "I am not available", which peers treat as a removal.
+    QByteArray json = Protocol::buildDiscoveryAdvertisement(
+            Settings::deviceName(), QSysInfo::productType(),
+            Settings::discoverable() ? serverPort : 0);
+    socket.writeDatagram(json, addr, port);
 }
 
 bool DiscoveryService::isLocalAddress(const QHostAddress &addr)
@@ -120,27 +112,17 @@ void DiscoveryService::socketReadyRead()
         if (isLocalAddress(addr))
             continue;
 
-        QJsonDocument json = QJsonDocument::fromJson(data);
-        if (!json.isObject())
-            continue;
-        QJsonObject obj = json.object();
-        QJsonValue request = obj.value("request");
-        if (!request.isBool())
-            continue;
-        if (request.toBool()) {
+        Protocol::Advertisement ad;
+        switch (Protocol::parseDiscoveryDatagram(data, &ad)) {
+        case Protocol::DiscoveryRequest:
+            // Answer unicast to the asker, never by broadcasting.
             sendInfo(addr, port);
-            continue;
+            break;
+        case Protocol::DiscoveryAdvertisement:
+            emit newHost(ad.deviceName, addr, ad.port);
+            break;
+        case Protocol::InvalidDatagram:
+            break;
         }
-        QJsonValue deviceName = obj.value("device_name");
-        QJsonValue remotePort = obj.value("port");
-        if (!deviceName.isString() || !remotePort.isDouble())
-            continue;
-        QString deviceNameStr = deviceName.toString();
-        quint16 remotePortInt;
-        if (!FileTransferPolicy::parsePort(remotePort.toDouble(), &remotePortInt))
-            continue;
-        if (!FileTransferPolicy::isSafeDeviceName(deviceNameStr))
-            continue;
-        emit newHost(deviceNameStr, addr, remotePortInt);
     }
 }

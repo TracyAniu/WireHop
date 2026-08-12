@@ -15,6 +15,7 @@
 //! persistent identity, large frames) is a later milestone.
 
 pub mod crypto;
+pub mod discovery;
 pub mod frame;
 pub mod message;
 pub mod policy;

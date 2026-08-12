@@ -10,6 +10,7 @@ use std::process::Command;
 
 use serde_json::Value;
 use wirehop_core::crypto::Crypto;
+use wirehop_core::discovery;
 use wirehop_core::message::{self, FileMetadata, Metadata};
 use wirehop_core::protocol::{self, PeerNegotiation};
 
@@ -170,4 +171,66 @@ fn committed_fixture_is_reproducible() {
          `cargo run -p wirehop-cli -- emit-vectors > docs/references/protocol-vectors.json` \
          and review the diff as a wire-protocol change"
     );
+}
+
+#[test]
+fn discovery_datagrams_match_the_fixture() {
+    let v = fixture();
+    assert_eq!(
+        String::from_utf8(discovery::build_request()).unwrap(),
+        v["discovery_request"].as_str().unwrap()
+    );
+
+    let ads = v["discovery_advertisements"].as_array().unwrap();
+    assert!(!ads.is_empty());
+    for case in ads {
+        let built = discovery::build_advertisement(
+            case["device_name"].as_str().unwrap(),
+            case["device_type"].as_str().unwrap(),
+            case["port"].as_u64().unwrap() as u16,
+        );
+        assert_eq!(
+            String::from_utf8(built).unwrap(),
+            case["canonical_json"].as_str().unwrap()
+        );
+    }
+}
+
+#[test]
+fn discovery_parsing_matches_the_fixture() {
+    let v = fixture();
+    let cases = v["discovery_parsing"].as_array().unwrap();
+    assert!(!cases.is_empty());
+
+    for case in cases {
+        let name = case["name"].as_str().unwrap();
+        let input = case["input"].as_str().unwrap();
+        let expected = &case["expected"];
+        let actual = discovery::parse_datagram(input.as_bytes());
+
+        match expected["kind"].as_str().unwrap() {
+            "request" => assert_eq!(actual, Some(discovery::Datagram::Request), "case {name}"),
+            "advertisement" => match actual {
+                Some(discovery::Datagram::Advertisement(ad)) => {
+                    assert_eq!(
+                        ad.device_name,
+                        expected["device_name"].as_str().unwrap(),
+                        "case {name}"
+                    );
+                    assert_eq!(
+                        ad.device_type,
+                        expected["device_type"].as_str().unwrap(),
+                        "case {name}"
+                    );
+                    assert_eq!(
+                        u64::from(ad.port),
+                        expected["port"].as_u64().unwrap(),
+                        "case {name}"
+                    );
+                }
+                other => panic!("case {name}: expected an advertisement, got {other:?}"),
+            },
+            _ => assert_eq!(actual, None, "case {name}"),
+        }
+    }
 }
