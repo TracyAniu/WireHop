@@ -37,6 +37,7 @@
 #include <QNetworkInterface>
 
 #include "discoveryservice.h"
+#include "filetransferpolicy.h"
 #include "settings.h"
 
 DiscoveryService::DiscoveryService(QObject *parent) : QObject(parent)
@@ -104,10 +105,13 @@ void DiscoveryService::socketReadyRead()
 {
     while (socket.hasPendingDatagrams()) {
         qint64 size = socket.pendingDatagramSize();
-        QByteArray data(size, 0);
+        QByteArray data(size < 0 ? 0 : size, 0);
         QHostAddress addr;
         quint16 port;
-        socket.readDatagram(data.data(), size, &addr, &port);
+        socket.readDatagram(data.data(), data.size(), &addr, &port);
+
+        if (size <= 0 || size > FileTransferPolicy::MAX_DISCOVERY_DATAGRAM_BYTES)
+            continue;
 
         if (isLocalAddress(addr))
             continue;
@@ -128,7 +132,11 @@ void DiscoveryService::socketReadyRead()
         if (!deviceName.isString() || !remotePort.isDouble())
             continue;
         QString deviceNameStr = deviceName.toString();
-        quint16 remotePortInt = remotePort.toInt();
+        quint16 remotePortInt;
+        if (!FileTransferPolicy::parsePort(remotePort.toDouble(), &remotePortInt))
+            continue;
+        if (!FileTransferPolicy::isSafeDeviceName(deviceNameStr))
+            continue;
         emit newHost(deviceNameStr, addr, remotePortInt);
     }
 }

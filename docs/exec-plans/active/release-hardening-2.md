@@ -48,7 +48,7 @@ Resolve the eight verified review findings that block a stable public release: t
 - [x] Stage 2: Clean-build smoke recovery + `_common.sh` polluted-build-dir guard + TESTING.md note.
 - [x] Stage 3: `scripts/package-macos.sh` (stage → macdeployqt → ad-hoc sign → verify → launch check → zip); CI macOS job calls it; SECURITY.md residual-risk note.
 - [x] Stage 4: SendToDialog port!=0 validation, socket teardown before reuse, sender()-guards in slots.
-- [ ] Stage 5: `FileTransferPolicy::parsePort`, discovery datagram size bound, device-name validation; policy tests.
+- [x] Stage 5: `FileTransferPolicy::parsePort`, discovery datagram size bound, device-name validation; policy tests.
 - [ ] Stage 6: Session watchdog (state-aware, virtual for tests), sender HANDSHAKE2 override, server session cap; zh_CN strings.
 - [ ] Stage 7: GUI-decoupling (openDownloadFolder signal, downloadPath/deviceName injection), loopback test suite, CI test job gating packaging.
 - [ ] Stage 8: Receiver `{"ack":1}` frame, sender WAITING_FOR_ACK state with 10 s timeout and unconfirmed wording; compat matrix in ARCHITECTURE.md; zh_CN strings.

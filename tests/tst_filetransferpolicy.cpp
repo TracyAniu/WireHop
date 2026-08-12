@@ -5,6 +5,8 @@
 #include <QTemporaryFile>
 #include <QtTest>
 
+#include <cmath>
+#include <limits>
 #include <stdexcept>
 
 #include "crypto.h"
@@ -18,6 +20,7 @@ private slots:
     void rejectsUnsafeFilenames();
     void validatesDeviceNames();
     void validatesFileSizes();
+    void validatesPorts();
     void enforcesTotalSize();
     void generatesCollisionPaths();
     void commitsWithoutOverwriting();
@@ -86,6 +89,27 @@ void FileTransferPolicyTest::validatesFileSizes()
     QVERIFY(!FileTransferPolicy::parseFileSize(
             static_cast<double>(FileTransferPolicy::maxFileSize()) + 1, &size));
     QVERIFY(!FileTransferPolicy::parseFileSize(1, nullptr));
+}
+
+void FileTransferPolicyTest::validatesPorts()
+{
+    quint16 port = 99;
+    QVERIFY(FileTransferPolicy::parsePort(0, &port));
+    QCOMPARE(port, quint16(0));
+    QVERIFY(FileTransferPolicy::parsePort(1, &port));
+    QCOMPARE(port, quint16(1));
+    QVERIFY(FileTransferPolicy::parsePort(52637, &port));
+    QCOMPARE(port, quint16(52637));
+    QVERIFY(FileTransferPolicy::parsePort(65535, &port));
+    QCOMPARE(port, quint16(65535));
+
+    QVERIFY(!FileTransferPolicy::parsePort(-1, &port));
+    QVERIFY(!FileTransferPolicy::parsePort(65536, &port));
+    QVERIFY(!FileTransferPolicy::parsePort(70000, &port));
+    QVERIFY(!FileTransferPolicy::parsePort(4.5, &port));
+    QVERIFY(!FileTransferPolicy::parsePort(std::nan(""), &port));
+    QVERIFY(!FileTransferPolicy::parsePort(std::numeric_limits<double>::infinity(), &port));
+    QVERIFY(!FileTransferPolicy::parsePort(1, nullptr));
 }
 
 void FileTransferPolicyTest::enforcesTotalSize()

@@ -97,6 +97,16 @@ bool FileTransferPolicy::parseFileSize(double value, quint64 *size)
     return true;
 }
 
+bool FileTransferPolicy::parsePort(double value, quint16 *port)
+{
+    if (!port || !std::isfinite(value) || value < 0 || std::floor(value) != value
+            || value > 65535)
+        return false;
+
+    *port = static_cast<quint16>(value);
+    return true;
+}
+
 bool FileTransferPolicy::canAppendFile(quint64 currentTotal, quint64 fileSize)
 {
     return fileSize <= maxFileSize() && currentTotal <= maxTotalSize()
