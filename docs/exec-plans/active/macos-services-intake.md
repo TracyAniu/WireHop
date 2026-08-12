@@ -25,7 +25,7 @@ Right-clicking file(s) in Finder shows "Send with WireHop" under Services (local
 
 ## Non-goals
 
-- A true Share-sheet extension (.appex) — deferred until Developer ID signing exists.
+- ~~A true Share-sheet extension (.appex) — deferred until Developer ID signing exists.~~ Scope extended: the feasibility spike proved ad-hoc appex loading works on macOS 15, so the Share extension is now in scope (see progress log).
 - Single-instance guard for double launches of the raw binary (Finder/Services always route to the running bundle instance).
 - Windows/Linux shell integration.
 
@@ -55,6 +55,7 @@ Right-clicking file(s) in Finder shows "Send with WireHop" under Services (local
 
 - 2026-08-12: Plan created after exploration; implementation starting.
 - 2026-08-12: Implemented and machine-verified end-to-end (registration + NSPerformService launch). Discovered and guarded a qmake pitfall: the generated bundle Info.plist has no dependency on the source plist, so `_common.sh` now deletes the stale copy when the source is newer.
+- 2026-08-12: User reported the Finder attempt failed with "cannot open the specified document or URL" — root cause: no `CFBundleDocumentTypes`, so LaunchServices refused document-open requests. Fixed (viewer role, rank None, public.data). Share-sheet spike succeeded: a hand-built, ad-hoc-signed appex (clang + `-e _NSExtensionMain`) registers and enables in pluginkit on macOS 15 — but only when signed with its sandbox entitlements AFTER any `--deep` app signature (codesign --deep strips nested entitlements; this cost the first spike round). Productionized: `WireHop/shareext/`, `scripts/build-share-extension.sh`, QMAKE_POST_LINK embedding, corrected signing order in `package-macos.sh`. Verified: `open -a` document path now succeeds and launches the app (previously the exact reported error); full packaging green.
 
 ## Open Questions
 

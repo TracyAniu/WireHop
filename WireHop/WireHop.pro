@@ -91,4 +91,7 @@ macx {
     infoplist_locales.files = locales/zh-Hans.lproj
     infoplist_locales.path = Contents/Resources
     QMAKE_BUNDLE_DATA += infoplist_locales
+
+    # Embed the Share-sheet extension after linking (see shareext/).
+    QMAKE_POST_LINK += $$shell_quote($$PWD/../scripts/build-share-extension.sh) $$shell_quote($$OUT_PWD/WireHop.app)
 }

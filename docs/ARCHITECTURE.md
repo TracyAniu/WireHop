@@ -81,7 +81,8 @@ The acknowledgment is additive and keeps LANDrop 0.4.0 wire compatibility:
 | --- | --- | --- |
 | Local UDP port 52637 | Peer discovery request/advertisement JSON. | `DiscoveryService` |
 | macOS Services ("Send with WireHop") | Finder context-menu file intake via NSServices/pasteboard. | `macservices.mm` → `TrayIcon::sendFiles` |
-| File-open events and CLI arguments | External file intake (open-with, dock drop, `wirehop <files>`). | `FileOpenCollector` in `main.cpp` → `TrayIcon::sendFiles` |
+| macOS Share sheet ("WireHop") | Share-extension appex (`WireHop/shareext/`, built by `scripts/build-share-extension.sh`) forwards file URLs to the app through LaunchServices. | appex → document open → `FileOpenCollector` |
+| File-open events and CLI arguments | External file intake (open-with, dock drop, `wirehop <files>`); `CFBundleDocumentTypes` (viewer, rank None) makes the app a valid open-with target. | `FileOpenCollector` in `main.cpp` → `TrayIcon::sendFiles` |
 | Local TCP listener | Key exchange, approval metadata, and encrypted file stream. | `FileTransferServer` / transfer sessions |
 | GitHub Releases API for `TracyAniu/WireHop` | Manual update version check using the latest release tag. | `SettingsDialog` |
 | Latest WireHop GitHub release | Browser destination when an update is accepted. | `SettingsDialog` |

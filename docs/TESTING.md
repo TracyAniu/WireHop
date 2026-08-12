@@ -38,6 +38,7 @@ Dialog behavior, persistence, real two-machine transfer, and non-macOS runtime b
 5. Settings: change device name, download path, discoverability, and port; restart where required and verify persistence and advertised behavior.
 6. Localization: run with Simplified Chinese locale after user-visible text changes and inspect affected dialogs for missing or clipped translations.
 7. macOS Services intake: register the bundle (`lsregister -f <path>/WireHop.app`, then `/System/Library/CoreServices/pbs -update`), right-click a file in Finder → Services → "Send with WireHop" (用 WireHop 发送 on a Chinese account), and verify the send dialog opens preloaded. `./scripts/dev.sh <file>` covers the CLI intake path. Note: editing `Info.plist` requires the `_common.sh` staleness guard (qmake never regenerates the bundle plist on its own).
+8. macOS Share sheet: after registering the bundle, `pluginkit -m -i io.github.tracyaniu.wirehop.share` must list the extension (`+` prefix when enabled; enable with `pluginkit -e use -i …`). Right-click a file → Share → WireHop must open the preloaded send dialog. `open -a <path>/WireHop.app <file>` is the scriptable proxy for the forwarding chain. Signing rule: the appex must keep its sandbox entitlements — never re-sign the app with `codesign --deep` after embedding (it strips them); reseal the outer bundle without `--deep` instead.
 
 Use isolated test files and a dedicated temporary download directory. Never overwrite valuable user data during validation.
 

@@ -39,6 +39,10 @@ ditto "$BUILD_DIR/WireHop.app" "$APP"
 # macdeployqt invalidates the linker's ad-hoc signature; re-sign and verify,
 # otherwise the packaged app is killed at launch on Apple Silicon.
 codesign --force --deep --sign - "$APP"
+# --deep re-signs nested code without its entitlements, which breaks the
+# share extension; rebuild/re-sign the appex, then reseal only the outer app.
+"$SCRIPT_DIR/build-share-extension.sh" "$APP"
+codesign --force --sign - "$APP"
 codesign --verify --deep --strict "$APP"
 
 file "$APP/Contents/MacOS/WireHop" | grep -q "$ARCH"
