@@ -36,6 +36,7 @@
 #include "filetransferdialog.h"
 #include "filetransfersender.h"
 #include "sendtodialog.h"
+#include "settings.h"
 #include "ui_sendtodialog.h"
 
 SendToDialog::SendToDialog(QWidget *parent, const QList<QSharedPointer<QFile>> &files,
@@ -145,7 +146,7 @@ void SendToDialog::socketConnected()
     QTcpSocket *s = socket;
     socket = nullptr;
     s->disconnect(this);
-    FileTransferSender *transferSender = new FileTransferSender(nullptr, s, files);
+    FileTransferSender *transferSender = new FileTransferSender(nullptr, s, files, Settings::deviceName());
     FileTransferDialog *d = new FileTransferDialog(nullptr, transferSender);
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->show();

@@ -30,21 +30,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <QDesktopServices>
 #include <QDir>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QStorageInfo>
 #include <QTimer>
-#include <QUrl>
 
 #include "filetransferpolicy.h"
 #include "filetransferreceiver.h"
-#include "settings.h"
 
-FileTransferReceiver::FileTransferReceiver(QObject *parent, QTcpSocket *socket) :
-    FileTransferSession(parent, socket), writingFile(nullptr), downloadPath(Settings::downloadPath()) {}
+FileTransferReceiver::FileTransferReceiver(QObject *parent, QTcpSocket *socket, const QString &downloadPath) :
+    FileTransferSession(parent, socket), writingFile(nullptr), downloadPath(downloadPath) {}
 
 void FileTransferReceiver::respond(bool accepted)
 {
@@ -244,7 +241,7 @@ void FileTransferReceiver::createNextFile()
     if (transferQ.empty()) {
         state = FINISHED;
         touchWatchdog();
-        QDesktopServices::openUrl(QUrl::fromLocalFile(downloadPath));
+        emit openDownloadFolder(downloadPath);
         emit printMessage(tr("Done!"));
         socket->disconnectFromHost();
         QTimer::singleShot(5000, this, &FileTransferSession::ended);

@@ -39,7 +39,7 @@
 class FileTransferReceiver : public FileTransferSession {
     Q_OBJECT
 public:
-    FileTransferReceiver(QObject *parent, QTcpSocket *socket);
+    FileTransferReceiver(QObject *parent, QTcpSocket *socket, const QString &downloadPath);
     void respond(bool accepted);
 protected:
     void processReceivedData(const QByteArray &data);

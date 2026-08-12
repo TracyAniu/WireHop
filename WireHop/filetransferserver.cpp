@@ -62,7 +62,7 @@ void FileTransferServer::serverNewConnection()
             socket->deleteLater();
             continue;
         }
-        FileTransferReceiver *receiver = new FileTransferReceiver(nullptr, socket);
+        FileTransferReceiver *receiver = new FileTransferReceiver(nullptr, socket, Settings::downloadPath());
         ++activeSessions;
         connect(receiver, &QObject::destroyed, this, &FileTransferServer::sessionDestroyed);
         FileTransferDialog *d = new FileTransferDialog(nullptr, receiver);

@@ -206,5 +206,10 @@ void FileTransferPolicyTest::rejectsInvalidCryptoInputs()
     QVERIFY_EXCEPTION_THROWN(receiver.decrypt(cipherText), std::runtime_error);
 }
 
-QTEST_APPLESS_MAIN(FileTransferPolicyTest)
+int runFileTransferPolicyTest(int argc, char *argv[])
+{
+    FileTransferPolicyTest test;
+    return QTest::qExec(&test, argc, argv);
+}
+
 #include "tst_filetransferpolicy.moc"

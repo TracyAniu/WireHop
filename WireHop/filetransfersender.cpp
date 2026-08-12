@@ -39,10 +39,10 @@
 #include "filetransfersender.h"
 
 #include "filetransferpolicy.h"
-#include "settings.h"
 
-FileTransferSender::FileTransferSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files) :
-    FileTransferSession(parent, socket), files(files)
+FileTransferSender::FileTransferSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files,
+                                       const QString &deviceName) :
+    FileTransferSession(parent, socket), files(files), deviceName(deviceName)
 {
     connect(socket, &QTcpSocket::bytesWritten, this, &FileTransferSender::socketBytesWritten);
 
@@ -70,7 +70,6 @@ void FileTransferSender::handshake1Finished()
         return;
     }
 
-    QString deviceName = Settings::deviceName();
     if (!FileTransferPolicy::isSafeDeviceName(deviceName)) {
         emit errorOccurred(tr("The configured device name is invalid."));
         return;

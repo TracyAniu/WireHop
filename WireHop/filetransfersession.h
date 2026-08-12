@@ -81,6 +81,7 @@ signals:
     void printMessage(const QString &msg);
     void updateProgress(double progress);
     void errorOccurred(const QString &msg);
+    void openDownloadFolder(const QString &path);
     void fileMetadataReady(const QList<FileTransferSession::FileMetadata> &metadata, quint64 totalSize,
                            const QString &deviceName, const QString &sessionKeyDigest);
     void ended();

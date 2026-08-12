@@ -14,7 +14,7 @@
 | `./scripts/dev.sh` | Configures, compiles, and runs the native application. |
 | `./scripts/typecheck.sh` | Performs the closest available static check by compiling all application sources. |
 | `./scripts/lint.sh` | Checks harness shell syntax, `features.json`, trailing whitespace, and `git diff --check`. |
-| `./scripts/test.sh` | Builds and runs the Qt Test suite for filename/size policy, collision-safe commits, and cryptographic input handling. |
+| `./scripts/test.sh` | Builds and runs the Qt Test suite: filename/size/port policy, collision-safe commits, cryptographic input handling, and a loopback sender/receiver integration suite. |
 | `./scripts/smoke.sh` | Compiles, starts WireHop, and verifies the process remains alive for a short interval. |
 
 Application build artifacts default to the ignored `build-agent/` directory and test artifacts to `build-agent-tests/`. `WIREHOP_BUILD_DIR`, `WIREHOP_TEST_BUILD_DIR`, `QMAKE_BIN`, `WIREHOP_JOBS`, and `WIREHOP_SMOKE_SECONDS` are supported overrides. The corresponding legacy `LANDROP_*` names remain accepted as fallbacks.
@@ -23,9 +23,11 @@ Never run `macdeployqt` inside the build directory: it rewrites the bundle in pl
 
 ## Current Strategy
 
-The Qt Test target covers portable filename validation, declared size arithmetic, collision naming, non-overwriting temporary-file commits, shared-key encryption round trips, malformed key lengths, short ciphertext, and authentication failure. Compilation catches type/link/resource integration errors, and the smoke wrapper covers initial native process startup.
+The Qt Test target covers portable filename validation, declared size arithmetic, port parsing, collision naming, non-overwriting temporary-file commits, shared-key encryption round trips, malformed key lengths, short ciphertext, and authentication failure. A GUI-free loopback suite (`tests/tst_filetransfersession.cpp`) runs real sender/receiver sessions over 127.0.0.1 into isolated temporary directories: accepted multi-file transfer with byte comparison, rejection, mid-transfer disconnect without leftover partial files, repeated-respond handling, watchdog timeout of an idle peer, and malformed encrypted metadata. The session/sender/receiver sources link without QtGui (`QT -= gui` in `tests/tests.pro`); keep transfer primitives free of widget and QDesktopServices dependencies so this stays true. Compilation catches type/link/resource integration errors, and the smoke wrapper covers initial native process startup.
 
-Network framing, dialog behavior, persistence, actual peer-to-peer transfer, interruption cleanup timing, and non-macOS behavior still require manual validation. The next automated layer should be a loopback sender/receiver integration test with isolated temporary directories.
+CI (`.github/workflows/package.yml`) runs `lint.sh` and `test.sh` on every push and pull request; the packaging jobs run only after that job passes.
+
+Dialog behavior, persistence, real two-machine transfer, and non-macOS runtime behavior still require manual validation.
 
 ## Critical Manual Workflows
 

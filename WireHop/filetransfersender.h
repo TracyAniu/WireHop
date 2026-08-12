@@ -39,12 +39,14 @@
 class FileTransferSender : public FileTransferSession {
     Q_OBJECT
 public:
-    FileTransferSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files);
+    FileTransferSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files,
+                       const QString &deviceName);
 private:
     enum {
         TRANSFER_QUANTA = 64000
     };
     QList<QSharedPointer<QFile>> files;
+    QString deviceName;
 protected:
     int watchdogIntervalMsecs() const;
     void handshake1Finished();

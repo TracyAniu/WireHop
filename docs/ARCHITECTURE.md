@@ -34,7 +34,7 @@ WireHop is a single-process Qt Widgets application. `main.cpp` creates the appli
 - `DiscoveryService` owns UDP discovery and emits peer endpoints; it must not initiate transfers or own UI state.
 - `FileTransferServer` accepts TCP connections and creates receiver sessions/dialogs.
 - `FileTransferSession` owns shared framing, key negotiation, encryption/decryption, state, and transfer signals.
-- `FileTransferSender` and `FileTransferReceiver` implement their respective metadata and byte-stream state machines.
+- `FileTransferSender` and `FileTransferReceiver` implement their respective metadata and byte-stream state machines. They receive the device name and download path through their constructors and stay QtCore/QtNetwork-only so the loopback test suite can link them; opening the download folder is a signal handled by the dialog layer.
 - `FileTransferPolicy` is the reusable boundary for portable leaf filenames, transfer-size limits, collision naming, and non-overwriting temporary-file commits.
 - Dialog classes translate user actions and session signals into UI. Generated `ui_*.h` files come from the checked-in `.ui` forms and must not be edited directly.
 - `Crypto` is the libsodium boundary. Protocol or cryptographic changes require explicit compatibility and security review.
@@ -57,7 +57,7 @@ WireHop is a single-process Qt Widgets application. `main.cpp` creates the appli
 5. The receiver displays the request and sends an encrypted accept/reject response.
 6. When accepted, the sender streams encrypted chunks and the receiver writes bytes in metadata order to hidden temporary files in the configured directory.
 7. A completed temporary file is atomically renamed when the platform permits. Existing destination names are preserved and the received file receives a numbered suffix.
-8. Progress signals update the dialog; completion disconnects the socket and opens the receiver's download directory.
+8. Progress signals update the dialog; completion disconnects the socket, and the receiver's dialog opens the download directory in response to the session's signal.
 
 ## Dependency Rules
 
