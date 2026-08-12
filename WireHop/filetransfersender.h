@@ -46,6 +46,7 @@ private:
     };
     QList<QSharedPointer<QFile>> files;
 protected:
+    int watchdogIntervalMsecs() const;
     void handshake1Finished();
     void processReceivedData(const QByteArray &data);
 private slots:

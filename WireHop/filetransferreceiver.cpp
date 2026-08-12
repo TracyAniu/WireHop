@@ -83,6 +83,7 @@ void FileTransferReceiver::respond(bool accepted)
         state = FINISHED;
         connect(socket, &QTcpSocket::bytesWritten, this, &FileTransferReceiver::ended);
     }
+    touchWatchdog();
 }
 
 void FileTransferReceiver::processReceivedData(const QByteArray &data)
@@ -242,6 +243,7 @@ void FileTransferReceiver::createNextFile()
     }
     if (transferQ.empty()) {
         state = FINISHED;
+        touchWatchdog();
         QDesktopServices::openUrl(QUrl::fromLocalFile(downloadPath));
         emit printMessage(tr("Done!"));
         socket->disconnectFromHost();

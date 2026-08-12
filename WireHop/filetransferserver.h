@@ -42,7 +42,12 @@ public:
     void start();
     quint16 port();
 private:
+    enum {
+        MAX_CONCURRENT_SESSIONS = 8
+    };
     QTcpServer server;
+    int activeSessions;
 private slots:
     void serverNewConnection();
+    void sessionDestroyed();
 };

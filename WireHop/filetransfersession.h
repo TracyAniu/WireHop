@@ -34,6 +34,7 @@
 
 #include <QObject>
 #include <QTcpSocket>
+#include <QTimer>
 
 #include "crypto.h"
 
@@ -55,13 +56,22 @@ protected:
         TRANSFERRING,
         FINISHED
     } state;
+    enum {
+        HANDSHAKE_TIMEOUT_MSECS = 30000,
+        RESPONSE_TIMEOUT_MSECS = 300000,
+        STALL_TIMEOUT_MSECS = 60000
+    };
     QTcpSocket *socket;
     Crypto crypto;
     QByteArray readBuffer;
     QList<FileMetadata> transferQ;
     quint64 totalSize;
     quint64 transferredSize;
+    QTimer watchdogTimer;
     bool encryptAndSend(const QByteArray &data);
+    void touchWatchdog();
+    virtual int watchdogIntervalMsecs() const;
+    virtual void watchdogTimedOut();
     virtual void handshake1Finished();
     virtual void processReceivedData(const QByteArray &data) = 0;
 private slots:

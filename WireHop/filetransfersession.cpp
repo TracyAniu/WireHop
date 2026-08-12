@@ -50,12 +50,50 @@ FileTransferSession::FileTransferSession(QObject *parent, QTcpSocket *socket) :
             QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
 #endif
             this, &FileTransferSession::socketErrorOccurred);
+
+    watchdogTimer.setSingleShot(true);
+    connect(&watchdogTimer, &QTimer::timeout, this, &FileTransferSession::watchdogTimedOut);
 }
 
 void FileTransferSession::start()
 {
     emit printMessage(tr("Handshaking..."));
     socket->write(crypto.localPublicKey());
+    touchWatchdog();
+}
+
+void FileTransferSession::touchWatchdog()
+{
+    int interval = watchdogIntervalMsecs();
+    if (interval > 0)
+        watchdogTimer.start(interval);
+    else
+        watchdogTimer.stop();
+}
+
+int FileTransferSession::watchdogIntervalMsecs() const
+{
+    switch (state) {
+    case HANDSHAKE1:
+    case HANDSHAKE2:
+        return HANDSHAKE_TIMEOUT_MSECS;
+    case AWAITING_RESPONSE:
+        return RESPONSE_TIMEOUT_MSECS;
+    case TRANSFERRING:
+        return STALL_TIMEOUT_MSECS;
+    case FINISHED:
+        return 0;
+    }
+    return HANDSHAKE_TIMEOUT_MSECS;
+}
+
+void FileTransferSession::watchdogTimedOut()
+{
+    if (state == FINISHED)
+        return;
+    state = FINISHED;
+    emit errorOccurred(tr("The connection timed out."));
+    socket->abort();
 }
 
 void FileTransferSession::respond(bool)
@@ -133,6 +171,8 @@ void FileTransferSession::socketReadyRead()
 
         processReceivedData(data);
     }
+
+    touchWatchdog();
 }
 
 void FileTransferSession::socketErrorOccurred()

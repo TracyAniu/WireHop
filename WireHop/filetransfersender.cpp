@@ -54,6 +54,15 @@ FileTransferSender::FileTransferSender(QObject *parent, QTcpSocket *socket, cons
     }
 }
 
+int FileTransferSender::watchdogIntervalMsecs() const
+{
+    // The sender idles in HANDSHAKE2 while the receiving user decides, so it
+    // gets the same human-scale budget as the receiver's AWAITING_RESPONSE.
+    if (state == HANDSHAKE2)
+        return RESPONSE_TIMEOUT_MSECS;
+    return FileTransferSession::watchdogIntervalMsecs();
+}
+
 void FileTransferSender::handshake1Finished()
 {
     if (transferQ.isEmpty() || transferQ.size() > FileTransferPolicy::MAX_FILES_PER_TRANSFER) {
@@ -134,6 +143,7 @@ void FileTransferSender::socketBytesWritten()
     }
     if (transferQ.empty()) {
         state = FINISHED;
+        touchWatchdog();
         emit printMessage(tr("Done!"));
         socket->disconnectFromHost();
         QTimer::singleShot(5000, this, &FileTransferSession::ended);
@@ -152,4 +162,5 @@ void FileTransferSender::socketBytesWritten()
     curMetadata.size -= static_cast<quint64>(data.size());
     transferredSize += static_cast<quint64>(data.size());
     emit updateProgress(static_cast<double>(transferredSize) / totalSize);
+    touchWatchdog();
 }
