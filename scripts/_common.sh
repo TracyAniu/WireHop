@@ -26,6 +26,12 @@ find_qmake() {
 }
 
 configure_wirehop() {
+    if [[ -f "$BUILD_DIR/WireHop.app/Contents/Resources/qt.conf" ]]; then
+        echo "The build directory $BUILD_DIR contains a macdeployqt-processed bundle and cannot be reused." >&2
+        echo "Delete it (rm -rf \"$BUILD_DIR\") or point WIREHOP_BUILD_DIR at a clean directory. Packaging must deploy into a staging copy, never into the build directory." >&2
+        return 2
+    fi
+
     local qmake_bin
     qmake_bin=$(find_qmake)
 

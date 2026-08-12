@@ -19,6 +19,8 @@
 
 Application build artifacts default to the ignored `build-agent/` directory and test artifacts to `build-agent-tests/`. `WIREHOP_BUILD_DIR`, `WIREHOP_TEST_BUILD_DIR`, `QMAKE_BIN`, `WIREHOP_JOBS`, and `WIREHOP_SMOKE_SECONDS` are supported overrides. The corresponding legacy `LANDROP_*` names remain accepted as fallbacks.
 
+Never run `macdeployqt` inside the build directory: it rewrites the bundle in place, invalidates the code signature (launches then die with SIGKILL on Apple Silicon), and breaks later incremental builds (SIGABRT during QApplication startup). Packaging must deploy into a staging copy; `configure_wirehop` refuses to reuse a build directory that contains a deployed `qt.conf`.
+
 ## Current Strategy
 
 The Qt Test target covers portable filename validation, declared size arithmetic, collision naming, non-overwriting temporary-file commits, shared-key encryption round trips, malformed key lengths, short ciphertext, and authentication failure. Compilation catches type/link/resource integration errors, and the smoke wrapper covers initial native process startup.
