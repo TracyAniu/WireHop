@@ -241,9 +241,19 @@ void FileTransferReceiver::createNextFile()
     if (transferQ.empty()) {
         state = FINISHED;
         touchWatchdog();
+        sendCompletionAck();
         emit openDownloadFolder(downloadPath);
         emit printMessage(tr("Done!"));
         socket->disconnectFromHost();
         QTimer::singleShot(5000, this, &FileTransferSession::ended);
     }
+}
+
+void FileTransferReceiver::sendCompletionAck()
+{
+    // Additive protocol frame: legacy LANDrop 0.4.0 senders silently ignore
+    // it. Best-effort only; a send failure must not fail a committed transfer.
+    QJsonObject obj;
+    obj.insert("ack", 1);
+    encryptAndSend(QJsonDocument(obj).toJson(QJsonDocument::Compact), false);
 }

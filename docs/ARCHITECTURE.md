@@ -57,7 +57,15 @@ WireHop is a single-process Qt Widgets application. `main.cpp` creates the appli
 5. The receiver displays the request and sends an encrypted accept/reject response.
 6. When accepted, the sender streams encrypted chunks and the receiver writes bytes in metadata order to hidden temporary files in the configured directory.
 7. A completed temporary file is atomically renamed when the platform permits. Existing destination names are preserved and the received file receives a numbered suffix.
-8. Progress signals update the dialog; completion disconnects the socket, and the receiver's dialog opens the download directory in response to the session's signal.
+8. After committing the last file, the receiver sends one encrypted `{"ack":1}` frame (best effort) and disconnects. The sender waits up to 10 seconds in `WAITING_FOR_ACK`: an acknowledgment yields "Done!", while a close or timeout without one yields a qualified "sent, not confirmed" message, never an error.
+9. Progress signals update the dialog; the receiver's dialog opens the download directory in response to the session's signal.
+
+The acknowledgment is additive and keeps LANDrop 0.4.0 wire compatibility:
+
+| | Legacy receiver (no ACK) | WireHop receiver (sends ACK) |
+| --- | --- | --- |
+| Legacy sender | Unchanged behavior. | The ACK frame arrives after the legacy sender finished; its `processReceivedData` ignores frames outside `HANDSHAKE2`, so both sides show completion as before. |
+| WireHop sender | The receiver closes right after the last byte; the sender reports "Sent, but the receiver did not confirm delivery." as qualified success. | The sender shows "Done!" only after the receiver confirms every file was committed. |
 
 ## Dependency Rules
 

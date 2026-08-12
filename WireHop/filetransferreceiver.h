@@ -43,6 +43,7 @@ public:
     void respond(bool accepted);
 protected:
     void processReceivedData(const QByteArray &data);
+    virtual void sendCompletionAck();
 private:
     QTemporaryFile *writingFile;
     QString downloadPath;

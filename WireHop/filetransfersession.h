@@ -54,12 +54,14 @@ protected:
         HANDSHAKE2,
         AWAITING_RESPONSE,
         TRANSFERRING,
+        WAITING_FOR_ACK,
         FINISHED
     } state;
     enum {
         HANDSHAKE_TIMEOUT_MSECS = 30000,
         RESPONSE_TIMEOUT_MSECS = 300000,
-        STALL_TIMEOUT_MSECS = 60000
+        STALL_TIMEOUT_MSECS = 60000,
+        ACK_TIMEOUT_MSECS = 10000
     };
     QTcpSocket *socket;
     Crypto crypto;
@@ -68,10 +70,11 @@ protected:
     quint64 totalSize;
     quint64 transferredSize;
     QTimer watchdogTimer;
-    bool encryptAndSend(const QByteArray &data);
+    bool encryptAndSend(const QByteArray &data, bool emitErrors = true);
     void touchWatchdog();
     virtual int watchdogIntervalMsecs() const;
     virtual void watchdogTimedOut();
+    virtual void handleSocketError();
     virtual void handshake1Finished();
     virtual void processReceivedData(const QByteArray &data) = 0;
 private slots:

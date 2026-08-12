@@ -63,6 +63,44 @@ int FileTransferSender::watchdogIntervalMsecs() const
     return FileTransferSession::watchdogIntervalMsecs();
 }
 
+void FileTransferSender::watchdogTimedOut()
+{
+    if (state == WAITING_FOR_ACK) {
+        finishUnconfirmed();
+        return;
+    }
+    FileTransferSession::watchdogTimedOut();
+}
+
+void FileTransferSender::handleSocketError()
+{
+    // Peers without the completion acknowledgment close the connection right
+    // after the last byte; that is qualified success, not an error.
+    if (state == WAITING_FOR_ACK) {
+        finishUnconfirmed();
+        return;
+    }
+    FileTransferSession::handleSocketError();
+}
+
+void FileTransferSender::finishConfirmed()
+{
+    state = FINISHED;
+    touchWatchdog();
+    emit printMessage(tr("Done!"));
+    socket->disconnectFromHost();
+    QTimer::singleShot(5000, this, &FileTransferSession::ended);
+}
+
+void FileTransferSender::finishUnconfirmed()
+{
+    state = FINISHED;
+    touchWatchdog();
+    emit printMessage(tr("Sent, but the receiver did not confirm delivery."));
+    socket->abort();
+    QTimer::singleShot(5000, this, &FileTransferSession::ended);
+}
+
 void FileTransferSender::handshake1Finished()
 {
     if (transferQ.isEmpty() || transferQ.size() > FileTransferPolicy::MAX_FILES_PER_TRANSFER) {
@@ -122,6 +160,12 @@ void FileTransferSender::processReceivedData(const QByteArray &data)
         }
         state = TRANSFERRING;
         socketBytesWritten();
+    } else if (state == WAITING_FOR_ACK) {
+        QJsonDocument json = QJsonDocument::fromJson(data);
+        if (!json.isObject())
+            return;
+        if (json.object().value("ack").toDouble() == 1.0)
+            finishConfirmed();
     }
 }
 
@@ -141,11 +185,9 @@ void FileTransferSender::socketBytesWritten()
         }
     }
     if (transferQ.empty()) {
-        state = FINISHED;
+        state = WAITING_FOR_ACK;
         touchWatchdog();
-        emit printMessage(tr("Done!"));
-        socket->disconnectFromHost();
-        QTimer::singleShot(5000, this, &FileTransferSession::ended);
+        emit printMessage(tr("Waiting for the receiver to confirm..."));
         return;
     }
     QSharedPointer<QFile> &curFile = files.front();

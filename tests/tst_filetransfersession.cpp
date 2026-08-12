@@ -25,6 +25,38 @@ protected:
     }
 };
 
+// Models a LANDrop 0.4.0 receiver: completes the transfer and closes the
+// socket without ever sending the completion acknowledgment.
+class LegacyReceiver : public FileTransferReceiver {
+public:
+    LegacyReceiver(QObject *parent, QTcpSocket *socket, const QString &downloadPath) :
+        FileTransferReceiver(parent, socket, downloadPath) {}
+protected:
+    void sendCompletionAck() override {}
+};
+
+class FastAckSender : public FileTransferSender {
+public:
+    FastAckSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files,
+                  const QString &deviceName) :
+        FileTransferSender(parent, socket, files, deviceName) {}
+protected:
+    int watchdogIntervalMsecs() const override
+    {
+        if (state == WAITING_FOR_ACK)
+            return 200;
+        return FileTransferSender::watchdogIntervalMsecs();
+    }
+};
+
+bool spyContainsMessage(const QSignalSpy &spy, const QString &message)
+{
+    for (int i = 0; i < spy.count(); ++i)
+        if (spy.at(i).first().toString() == message)
+            return true;
+    return false;
+}
+
 }
 
 class FileTransferSessionTest : public QObject {
@@ -37,6 +69,8 @@ private slots:
     void repeatedRespondIsRejected();
     void idlePeerTimesOut();
     void malformedMetadataIsRejected();
+    void unconfirmedWhenReceiverSkipsAck();
+    void unconfirmedWhenAckNeverArrives();
 private:
     struct Loopback {
         QTcpServer server;
@@ -139,12 +173,9 @@ void FileTransferSessionTest::acceptedTransferDeliversFiles()
     QVERIFY(QFileInfo::exists(downloadDir.filePath("empty.dat")));
     QCOMPARE(QFileInfo(downloadDir.filePath("empty.dat")).size(), qint64(0));
 
-    QTRY_VERIFY([&]() {
-        for (int i = 0; i < senderMessageSpy.count(); ++i)
-            if (senderMessageSpy.at(i).first().toString() == "Done!")
-                return true;
-        return false;
-    }());
+    QTRY_VERIFY(spyContainsMessage(senderMessageSpy, "Done!"));
+    QVERIFY(!spyContainsMessage(senderMessageSpy,
+                                "Sent, but the receiver did not confirm delivery."));
     QCOMPARE(receiverErrorSpy.count(), 0);
     QCOMPARE(senderErrorSpy.count(), 0);
 
@@ -314,6 +345,118 @@ void FileTransferSessionTest::malformedMetadataIsRejected()
 
     QTRY_COMPARE(errorSpy.count(), 1);
     QVERIFY(QDir(downloadDir.path()).entryList(QDir::Files | QDir::Hidden).isEmpty());
+}
+
+void FileTransferSessionTest::unconfirmedWhenReceiverSkipsAck()
+{
+    QTemporaryDir sourceDir, downloadDir;
+    QVERIFY(sourceDir.isValid());
+    QVERIFY(downloadDir.isValid());
+
+    QList<QSharedPointer<QFile>> files;
+    files.append(makeSourceFile(sourceDir.filePath("a.txt"), QByteArray("legacy payload")));
+    QVERIFY(files.first());
+
+    Loopback loop;
+    QVERIFY(connectLoopback(loop));
+    QScopedPointer<LegacyReceiver> receiver(
+            new LegacyReceiver(nullptr, loop.serverSide, downloadDir.path()));
+    QScopedPointer<FileTransferSender> sender(
+            new FileTransferSender(nullptr, loop.clientSide, files, "test-device"));
+
+    QSignalSpy metadataSpy(receiver.data(), &FileTransferSession::fileMetadataReady);
+    QSignalSpy senderMessageSpy(sender.data(), &FileTransferSession::printMessage);
+    QSignalSpy senderErrorSpy(sender.data(), &FileTransferSession::errorOccurred);
+
+    receiver->start();
+    sender->start();
+    QTRY_COMPARE(metadataSpy.count(), 1);
+    receiver->respond(true);
+
+    // The receiver closes without acknowledging; the sender reports qualified
+    // success rather than an error.
+    QTRY_VERIFY(spyContainsMessage(senderMessageSpy,
+                                   "Sent, but the receiver did not confirm delivery."));
+    QVERIFY(!spyContainsMessage(senderMessageSpy, "Done!"));
+    QCOMPARE(senderErrorSpy.count(), 0);
+
+    QFile received(downloadDir.filePath("a.txt"));
+    QVERIFY(received.open(QIODevice::ReadOnly));
+    QCOMPARE(received.readAll(), QByteArray("legacy payload"));
+}
+
+void FileTransferSessionTest::unconfirmedWhenAckNeverArrives()
+{
+    QTemporaryDir sourceDir;
+    QVERIFY(sourceDir.isValid());
+
+    QByteArray content(1000, 'z');
+    QList<QSharedPointer<QFile>> files;
+    files.append(makeSourceFile(sourceDir.filePath("a.bin"), content));
+    QVERIFY(files.first());
+
+    Loopback loop;
+    QVERIFY(connectLoopback(loop));
+    QScopedPointer<FastAckSender> sender(
+            new FastAckSender(nullptr, loop.clientSide, files, "test-device"));
+    QScopedPointer<QTcpSocket> rawReceiver(loop.serverSide);
+
+    QSignalSpy senderMessageSpy(sender.data(), &FileTransferSession::printMessage);
+    QSignalSpy senderErrorSpy(sender.data(), &FileTransferSession::errorOccurred);
+
+    sender->start();
+
+    // Drive a manual receiver that accepts and drains the transfer but never
+    // acknowledges and never closes the connection.
+    Crypto crypto;
+    QTRY_VERIFY(static_cast<quint64>(rawReceiver->bytesAvailable()) >= crypto.publicKeySize());
+    crypto.setRemotePublicKey(rawReceiver->read(static_cast<qint64>(crypto.publicKeySize())));
+    rawReceiver->write(crypto.localPublicKey());
+
+    QByteArray buffered;
+    auto readFrame = [&]() -> QByteArray {
+        while (true) {
+            buffered += rawReceiver->readAll();
+            if (buffered.size() >= 2) {
+                quint16 size = static_cast<quint16>(static_cast<quint8>(buffered[0])) << 8;
+                size |= static_cast<quint8>(buffered[1]);
+                if (buffered.size() >= size + 2) {
+                    QByteArray frame = buffered.mid(2, size);
+                    buffered = buffered.mid(size + 2);
+                    return crypto.decrypt(frame);
+                }
+            }
+            if (!QTest::qWaitFor([&]() { return rawReceiver->bytesAvailable() > 0; }, 5000))
+                return QByteArray();
+        }
+    };
+
+    QByteArray metadata = readFrame();
+    QVERIFY(QJsonDocument::fromJson(metadata).isObject());
+
+    QJsonObject response;
+    response.insert("response", 1);
+    QByteArray responseFrame =
+            crypto.encrypt(QJsonDocument(response).toJson(QJsonDocument::Compact));
+    quint16 responseSize = static_cast<quint16>(responseFrame.size());
+    responseFrame.prepend(static_cast<char>(responseSize & 0xFF));
+    responseFrame.prepend(static_cast<char>((responseSize >> 8) & 0xFF));
+    rawReceiver->write(responseFrame);
+
+    QByteArray receivedData;
+    while (receivedData.size() < content.size()) {
+        QByteArray chunk = readFrame();
+        QVERIFY(!chunk.isEmpty());
+        receivedData += chunk;
+    }
+    QCOMPARE(receivedData, content);
+
+    // No acknowledgment and no close: the sender's ACK watchdog finishes the
+    // session as unconfirmed instead of erroring.
+    QTRY_VERIFY(spyContainsMessage(senderMessageSpy,
+                                   "Sent, but the receiver did not confirm delivery."));
+    QVERIFY(!spyContainsMessage(senderMessageSpy, "Done!"));
+    QCOMPARE(senderErrorSpy.count(), 0);
 }
 
 int runFileTransferSessionTest(int argc, char *argv[])

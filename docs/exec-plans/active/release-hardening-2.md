@@ -51,7 +51,7 @@ Resolve the eight verified review findings that block a stable public release: t
 - [x] Stage 5: `FileTransferPolicy::parsePort`, discovery datagram size bound, device-name validation; policy tests.
 - [x] Stage 6: Session watchdog (state-aware, virtual for tests), sender HANDSHAKE2 override, server session cap; zh_CN strings. Manually verified: idle inbound connection aborted at 30.2s; 9th concurrent connection refused while 8 stay served.
 - [x] Stage 7: GUI-decoupling (openDownloadFolder signal, downloadPath/deviceName injection), loopback test suite (8 cases, GUI-free), CI test job gating packaging.
-- [ ] Stage 8: Receiver `{"ack":1}` frame, sender WAITING_FOR_ACK state with 10 s timeout and unconfirmed wording; compat matrix in ARCHITECTURE.md; zh_CN strings.
+- [x] Stage 8: Receiver `{"ack":1}` frame, sender WAITING_FOR_ACK state with 10 s timeout and unconfirmed wording; compat matrix in ARCHITECTURE.md; zh_CN strings. Loopback tests cover ack, no-ack close, and ack-timeout paths.
 - [ ] Stage 9: Docs sweep, progress log backfill (rebrand/packaging entries), move this plan to completed/.
 
 ## Validation

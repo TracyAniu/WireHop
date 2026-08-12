@@ -47,8 +47,12 @@ private:
     };
     QList<QSharedPointer<QFile>> files;
     QString deviceName;
+    void finishConfirmed();
+    void finishUnconfirmed();
 protected:
     int watchdogIntervalMsecs() const;
+    void watchdogTimedOut();
+    void handleSocketError();
     void handshake1Finished();
     void processReceivedData(const QByteArray &data);
 private slots:

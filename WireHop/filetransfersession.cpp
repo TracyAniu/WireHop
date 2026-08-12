@@ -81,6 +81,8 @@ int FileTransferSession::watchdogIntervalMsecs() const
         return RESPONSE_TIMEOUT_MSECS;
     case TRANSFERRING:
         return STALL_TIMEOUT_MSECS;
+    case WAITING_FOR_ACK:
+        return ACK_TIMEOUT_MSECS;
     case FINISHED:
         return 0;
     }
@@ -101,11 +103,12 @@ void FileTransferSession::respond(bool)
     throw std::runtime_error("respond not implemented");
 }
 
-bool FileTransferSession::encryptAndSend(const QByteArray &data)
+bool FileTransferSession::encryptAndSend(const QByteArray &data, bool emitErrors)
 {
     const quint64 maximumFrameSize = std::numeric_limits<quint16>::max();
     if (static_cast<quint64>(data.size()) + Crypto::encryptedOverhead() > maximumFrameSize) {
-        emit errorOccurred(tr("Message exceeds the protocol size limit."));
+        if (emitErrors)
+            emit errorOccurred(tr("Message exceeds the protocol size limit."));
         return false;
     }
 
@@ -113,14 +116,16 @@ bool FileTransferSession::encryptAndSend(const QByteArray &data)
     try {
         sendData = crypto.encrypt(data);
     } catch (const std::exception &e) {
-        emit errorOccurred(e.what());
+        if (emitErrors)
+            emit errorOccurred(e.what());
         return false;
     }
     quint16 size = static_cast<quint16>(sendData.size());
     sendData.prepend(static_cast<quint8>(size & 0xFF));
     sendData.prepend(static_cast<quint8>((size >> 8) & 0xFF));
     if (socket->write(sendData) != sendData.size()) {
-        emit errorOccurred(tr("Unable to queue data for sending."));
+        if (emitErrors)
+            emit errorOccurred(tr("Unable to queue data for sending."));
         return false;
     }
     return true;
@@ -176,6 +181,11 @@ void FileTransferSession::socketReadyRead()
 }
 
 void FileTransferSession::socketErrorOccurred()
+{
+    handleSocketError();
+}
+
+void FileTransferSession::handleSocketError()
 {
     if (state != FINISHED)
         emit errorOccurred(socket->errorString());
