@@ -120,14 +120,10 @@ jobs:
         run: ./scripts/typecheck.sh
 
       - name: Package
-        run: |
-          macdeployqt build-agent/WireHop.app
-          file build-agent/WireHop.app/Contents/MacOS/WireHop | grep -q arm64
-          otool -L build-agent/WireHop.app/Contents/MacOS/WireHop | grep -q '@executable_path/../Frameworks/libsodium'
-          ditto -c -k --sequesterRsrc --keepParent build-agent/WireHop.app WireHop-macos-arm64.zip
+        run: ./scripts/package-macos.sh
 
       - name: Upload
         uses: actions/upload-artifact@v7
         with:
           name: macOS-arm64-Build
-          path: WireHop-macos-arm64.zip
+          path: dist-macos/WireHop-macos-arm64.zip

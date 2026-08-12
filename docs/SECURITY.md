@@ -37,6 +37,10 @@ Treat changes near `FileTransferPolicy`, `FileTransferSession`, `Crypto`, or the
 
 The two-byte encrypted-frame length and 64,000-byte sender chunk are coupled. Outbound frames are now rejected when nonce and authentication overhead would exceed 65,535 bytes. Cryptographic overhead or chunk-size changes must preserve and test that invariant.
 
+## Packaging and Signing
+
+macOS packages are deployed into a staging copy, ad-hoc signed after `macdeployqt`, and verified with `codesign --verify --deep --strict` plus a brief launch check (`scripts/package-macos.sh`). Ad-hoc signatures only satisfy local execution policy: downloaded builds still trigger Gatekeeper quarantine prompts, and there is no Developer ID signing or notarization yet. Do not present the packaged artifacts as notarized distribution builds.
+
 ## Required Review and Validation
 
 Cryptography, protocol, discovery exposure, filename/path handling, download writes, and update-check changes require explicit human security review plus adversarial tests. Include malformed, truncated, oversized, replayed/repeated, traversal, collision, disconnect, and authentication-failure cases as applicable.

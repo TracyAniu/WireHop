@@ -46,7 +46,7 @@ Resolve the eight verified review findings that block a stable public release: t
 
 - [x] Stage 1: Qt 6-safe multi-select removal (`selectfilesdialog.cpp`).
 - [x] Stage 2: Clean-build smoke recovery + `_common.sh` polluted-build-dir guard + TESTING.md note.
-- [ ] Stage 3: `scripts/package-macos.sh` (stage → macdeployqt → ad-hoc sign → verify → launch check → zip); CI macOS job calls it; SECURITY.md residual-risk note.
+- [x] Stage 3: `scripts/package-macos.sh` (stage → macdeployqt → ad-hoc sign → verify → launch check → zip); CI macOS job calls it; SECURITY.md residual-risk note.
 - [ ] Stage 4: SendToDialog port!=0 validation, socket teardown before reuse, sender()-guards in slots.
 - [ ] Stage 5: `FileTransferPolicy::parsePort`, discovery datagram size bound, device-name validation; policy tests.
 - [ ] Stage 6: Session watchdog (state-aware, virtual for tests), sender HANDSHAKE2 override, server session cap; zh_CN strings.
@@ -68,6 +68,7 @@ Resolve the eight verified review findings that block a stable public release: t
 
 - 2026-08-12: Plan created from verified review findings; baseline recorded (smoke red, cause identified as polluted build dir). Next: stage 1.
 - 2026-08-12: Stage 1 done (row-index descending removal). Stage 2 done: after `rm -rf build-agent`, a full clean rebuild and the startup smoke passed, confirming the polluted-build-dir root cause; added the `configure_wirehop` qt.conf guard and the TESTING.md rule. Next: stage 3 (package-macos.sh + ad-hoc signing).
+- 2026-08-12: Stage 3 done. `package-macos.sh` stages into `dist-macos/`, re-signs ad-hoc after macdeployqt, passes `codesign --verify --deep --strict`, launch-checks the packaged app, and zips; CI macOS job now calls it. Local run green; smoke re-run confirms `build-agent/` stays clean. CI verification deferred to the stage-7 branch push. Next: stage 4 (SendToDialog).
 
 ## Open Questions
 
