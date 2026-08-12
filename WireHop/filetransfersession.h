@@ -32,7 +32,9 @@
 
 #pragma once
 
+#include <QJsonObject>
 #include <QObject>
+#include <QSet>
 #include <QTcpSocket>
 #include <QTimer>
 
@@ -69,8 +71,12 @@ protected:
     QList<FileMetadata> transferQ;
     quint64 totalSize;
     quint64 transferredSize;
+    int peerProtocolVersion;
+    QSet<QString> peerCaps;
     QTimer watchdogTimer;
     bool encryptAndSend(const QByteArray &data, bool emitErrors = true);
+    void adoptPeerNegotiation(const QJsonObject &obj);
+    bool peerHasCap(const QString &cap) const;
     void touchWatchdog();
     virtual int watchdogIntervalMsecs() const;
     virtual void watchdogTimedOut();

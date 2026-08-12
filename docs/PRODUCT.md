@@ -49,3 +49,4 @@ WireHop is derived from the open-source LANDrop 0.4.0 snapshot. Treat this repos
 | Discoverable | Setting that controls whether the advertised transfer port is nonzero. |
 | Session code | Six-digit digest derived from the negotiated session key and shown on both devices for out-of-band comparison. |
 | Transfer session | One TCP connection that performs key exchange, metadata approval, and encrypted file-data transfer. |
+| Capability | Feature flag negotiated inside the encrypted session via additive `protocol_version`/`caps` fields; absent fields identify a LANDrop 0.4.0-era peer (see `docs/references/PROTOCOL.md`). |

@@ -39,6 +39,7 @@
 
 #include "filetransferpolicy.h"
 #include "filetransferreceiver.h"
+#include "protocol.h"
 
 FileTransferReceiver::FileTransferReceiver(QObject *parent, QTcpSocket *socket, const QString &downloadPath) :
     FileTransferSession(parent, socket), writingFile(nullptr), downloadPath(downloadPath) {}
@@ -70,6 +71,7 @@ void FileTransferReceiver::respond(bool accepted)
 
     QJsonObject obj;
     obj.insert("response", static_cast<int>(accepted));
+    Protocol::insertNegotiationFields(obj);
     if (!encryptAndSend(QJsonDocument(obj).toJson(QJsonDocument::Compact)))
         return;
 
@@ -148,6 +150,7 @@ void FileTransferReceiver::processReceivedData(const QByteArray &data)
 
         transferQ = metadata;
         totalSize = declaredTotalSize;
+        adoptPeerNegotiation(obj);
         state = AWAITING_RESPONSE;
         emit fileMetadataReady(transferQ, totalSize, deviceName.toString(),
                                crypto.sessionKeyDigest());

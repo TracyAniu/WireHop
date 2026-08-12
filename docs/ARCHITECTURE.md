@@ -38,6 +38,7 @@ WireHop is a single-process Qt Widgets application. `main.cpp` creates the appli
 - `FileTransferPolicy` is the reusable boundary for portable leaf filenames, transfer-size limits, collision naming, and non-overwriting temporary-file commits.
 - Dialog classes translate user actions and session signals into UI. Generated `ui_*.h` files come from the checked-in `.ui` forms and must not be edited directly.
 - `Crypto` is the libsodium boundary. Protocol or cryptographic changes require explicit compatibility and security review.
+- `Protocol` (`protocol.h/.cpp`) owns the wire version constant, capability identifiers, and bounded parsing of peer negotiation fields (see `docs/references/PROTOCOL.md`). Sessions adopt peer version/capabilities only from decrypted frames; the copies in discovery datagrams are untrusted hints.
 
 ## Data Flow
 
@@ -53,11 +54,11 @@ WireHop is a single-process Qt Widgets application. `main.cpp` creates the appli
 1. The sender opens a TCP connection; the server creates a receiver session for an accepted socket.
 2. Both peers exchange ephemeral public keys and derive a shared session key. The UI displays a six-digit digest for user comparison.
 3. Subsequent messages use a two-byte big-endian length followed by a nonce and ChaCha20-Poly1305 ciphertext.
-4. The sender transmits encrypted JSON metadata with device information, filenames, and sizes.
-5. The receiver displays the request and sends an encrypted accept/reject response.
+4. The sender transmits encrypted JSON metadata with device information, filenames, and sizes, plus its `protocol_version` and `caps` negotiation fields.
+5. The receiver displays the request and sends an encrypted accept/reject response carrying the same negotiation fields; both sides adopt the peer's version/capabilities at this point.
 6. When accepted, the sender streams encrypted chunks and the receiver writes bytes in metadata order to hidden temporary files in the configured directory.
 7. A completed temporary file is atomically renamed when the platform permits. Existing destination names are preserved and the received file receives a numbered suffix.
-8. After committing the last file, the receiver sends one encrypted `{"ack":1}` frame (best effort) and disconnects. The sender waits up to 10 seconds in `WAITING_FOR_ACK`: an acknowledgment yields "Done!", while a close or timeout without one yields a qualified "sent, not confirmed" message, never an error.
+8. After committing the last file, the receiver sends one encrypted `{"ack":1}` frame (best effort) and disconnects. The sender waits in `WAITING_FOR_ACK` — the full 10-second window when the peer negotiated the `ack` capability, otherwise a 2-second grace window: an acknowledgment yields "Done!", while a close or timeout without one yields a qualified "sent, not confirmed" message, never an error.
 9. Progress signals update the dialog; the receiver's dialog opens the download directory in response to the session's signal.
 
 The acknowledgment is additive and keeps LANDrop 0.4.0 wire compatibility:
@@ -93,7 +94,7 @@ On first launch, `Settings` copies compatible preferences from the legacy `LANDr
 ## Known Tradeoffs and Risks
 
 - The Qt Test suite covers transfer-policy and crypto error paths, but there is no automated loopback peer-transfer or UI suite yet.
-- The transfer protocol has no explicit version field, so wire changes can silently break compatibility.
+- Wire changes must follow the version/capability negotiation rules in `docs/references/PROTOCOL.md`: new features are capabilities gated on values adopted inside the encrypted session, and `protocol_version` bumps are reserved for message-format breaks.
 - Discovery trusts unauthenticated LAN broadcasts. The session code and receiver confirmation are the user-visible peer check.
 - Incoming filenames and declared sizes cross a trust boundary. Current limits and non-overwriting commit behavior are centralized in `FileTransferPolicy`; see `docs/SECURITY.md` before changing them.
 - The checked-in packaging workflow and action versions reflect an older source snapshot and may require maintenance before release use.

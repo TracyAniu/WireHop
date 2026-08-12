@@ -39,6 +39,7 @@
 #include "filetransfersender.h"
 
 #include "filetransferpolicy.h"
+#include "protocol.h"
 
 FileTransferSender::FileTransferSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files,
                                        const QString &deviceName) :
@@ -60,6 +61,10 @@ int FileTransferSender::watchdogIntervalMsecs() const
     // gets the same human-scale budget as the receiver's AWAITING_RESPONSE.
     if (state == HANDSHAKE2)
         return RESPONSE_TIMEOUT_MSECS;
+    // Only peers that negotiated the "ack" capability earn the full
+    // acknowledgment window; see ACK_GRACE_TIMEOUT_MSECS.
+    if (state == WAITING_FOR_ACK && !peerHasCap(Protocol::capAck()))
+        return ACK_GRACE_TIMEOUT_MSECS;
     return FileTransferSession::watchdogIntervalMsecs();
 }
 
@@ -133,6 +138,7 @@ void FileTransferSender::handshake1Finished()
     obj.insert("device_name", deviceName);
     obj.insert("device_type", QSysInfo::productType());
     obj.insert("files", jsonFiles);
+    Protocol::insertNegotiationFields(obj);
     totalSize = validatedTotalSize;
     encryptAndSend(QJsonDocument(obj).toJson(QJsonDocument::Compact));
 }
@@ -153,6 +159,8 @@ void FileTransferSender::processReceivedData(const QByteArray &data)
             emit errorOccurred(tr("Handshake failed."));
             return;
         }
+
+        adoptPeerNegotiation(obj);
 
         if (response.toInt() == 0) {
             emit errorOccurred(tr("The receiving device rejected your file(s)."));

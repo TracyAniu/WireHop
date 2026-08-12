@@ -35,8 +35,11 @@
 
 #include "filetransfersession.h"
 
+#include "protocol.h"
+
 FileTransferSession::FileTransferSession(QObject *parent, QTcpSocket *socket) :
-    QObject(parent), state(HANDSHAKE1), socket(socket), totalSize(0), transferredSize(0)
+    QObject(parent), state(HANDSHAKE1), socket(socket), totalSize(0), transferredSize(0),
+    peerProtocolVersion(0)
 {
     socket->setParent(this);
     socket->setReadBufferSize(static_cast<qint64>(crypto.publicKeySize()) + 2
@@ -132,6 +135,20 @@ bool FileTransferSession::encryptAndSend(const QByteArray &data, bool emitErrors
 }
 
 void FileTransferSession::handshake1Finished() {}
+
+void FileTransferSession::adoptPeerNegotiation(const QJsonObject &obj)
+{
+    // Absent or malformed fields mean a legacy LANDrop 0.4.0 peer; the
+    // session proceeds either way. These values arrive inside the encrypted
+    // channel; the copies in discovery datagrams are untrusted hints only.
+    peerProtocolVersion = Protocol::parseVersion(obj.value("protocol_version"));
+    peerCaps = Protocol::parseCaps(obj.value("caps"));
+}
+
+bool FileTransferSession::peerHasCap(const QString &cap) const
+{
+    return peerCaps.contains(cap);
+}
 
 void FileTransferSession::socketReadyRead()
 {

@@ -15,6 +15,7 @@ SOURCES += \
     filetransferserver.cpp \
     filetransfersession.cpp \
     main.cpp \
+    protocol.cpp \
     selectfilesdialog.cpp \
     sendtodialog.cpp \
     settings.cpp \
@@ -31,6 +32,7 @@ HEADERS += \
     filetransfersender.h \
     filetransferserver.h \
     filetransfersession.h \
+    protocol.h \
     selectfilesdialog.h \
     sendtodialog.h \
     settings.h \

@@ -38,6 +38,7 @@
 
 #include "discoveryservice.h"
 #include "filetransferpolicy.h"
+#include "protocol.h"
 #include "settings.h"
 
 DiscoveryService::DiscoveryService(QObject *parent) : QObject(parent)
@@ -75,6 +76,9 @@ void DiscoveryService::sendInfo(const QHostAddress &addr, quint16 port)
     obj.insert("device_name", Settings::deviceName());
     obj.insert("device_type", QSysInfo::productType());
     obj.insert("port", Settings::discoverable() ? serverPort : 0);
+    // Untrusted hint for future peer-list use; the authoritative negotiation
+    // happens inside the encrypted transfer session.
+    Protocol::insertNegotiationFields(obj);
     socket.writeDatagram(QJsonDocument(obj).toJson(QJsonDocument::Compact), addr, port);
 }
 

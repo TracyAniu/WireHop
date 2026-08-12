@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
+#include <QJsonArray>
 #include <QSignalSpy>
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -9,6 +10,7 @@
 #include "crypto.h"
 #include "filetransferreceiver.h"
 #include "filetransfersender.h"
+#include "protocol.h"
 
 Q_DECLARE_METATYPE(QList<FileTransferSession::FileMetadata>)
 
@@ -49,6 +51,63 @@ protected:
     }
 };
 
+// Expose the negotiated peer state for assertions.
+class ProbeSender : public FileTransferSender {
+public:
+    ProbeSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files,
+                const QString &deviceName) :
+        FileTransferSender(parent, socket, files, deviceName) {}
+    int peerVersion() const { return peerProtocolVersion; }
+    bool peerAcksTransfers() const { return peerHasCap(Protocol::capAck()); }
+};
+
+class ProbeReceiver : public FileTransferReceiver {
+public:
+    ProbeReceiver(QObject *parent, QTcpSocket *socket, const QString &downloadPath) :
+        FileTransferReceiver(parent, socket, downloadPath) {}
+    int peerVersion() const { return peerProtocolVersion; }
+    bool peerAcksTransfers() const { return peerHasCap(Protocol::capAck()); }
+};
+
+// Manual-peer helpers for emulating LANDrop 0.4.0 endpoints on a raw socket.
+bool exchangeKeysManually(QTcpSocket *socket, Crypto &crypto)
+{
+    if (!QTest::qWaitFor([socket, &crypto]() {
+            return static_cast<quint64>(socket->bytesAvailable()) >= crypto.publicKeySize();
+        }, 5000))
+        return false;
+    crypto.setRemotePublicKey(socket->read(static_cast<qint64>(crypto.publicKeySize())));
+    socket->write(crypto.localPublicKey());
+    return true;
+}
+
+QByteArray makeFrame(Crypto &crypto, const QByteArray &plain)
+{
+    QByteArray frame = crypto.encrypt(plain);
+    quint16 size = static_cast<quint16>(frame.size());
+    frame.prepend(static_cast<char>(size & 0xFF));
+    frame.prepend(static_cast<char>((size >> 8) & 0xFF));
+    return frame;
+}
+
+QByteArray readNextFrame(QTcpSocket *socket, QByteArray &buffered, Crypto &crypto)
+{
+    while (true) {
+        buffered += socket->readAll();
+        if (buffered.size() >= 2) {
+            quint16 size = static_cast<quint16>(static_cast<quint8>(buffered[0])) << 8;
+            size |= static_cast<quint8>(buffered[1]);
+            if (buffered.size() >= size + 2) {
+                QByteArray frame = buffered.mid(2, size);
+                buffered = buffered.mid(size + 2);
+                return crypto.decrypt(frame);
+            }
+        }
+        if (!QTest::qWaitFor([socket]() { return socket->bytesAvailable() > 0; }, 5000))
+            return QByteArray();
+    }
+}
+
 bool spyContainsMessage(const QSignalSpy &spy, const QString &message)
 {
     for (int i = 0; i < spy.count(); ++i)
@@ -71,6 +130,10 @@ private slots:
     void malformedMetadataIsRejected();
     void unconfirmedWhenReceiverSkipsAck();
     void unconfirmedWhenAckNeverArrives();
+    void capabilityNegotiationIsAdopted();
+    void legacyResponseUsesShortAckGrace();
+    void legacyMetadataStillTransfers();
+    void oversizedCapsListIsTreatedAsLegacy();
 private:
     struct Loopback {
         QTcpServer server;
@@ -457,6 +520,206 @@ void FileTransferSessionTest::unconfirmedWhenAckNeverArrives()
                                    "Sent, but the receiver did not confirm delivery."));
     QVERIFY(!spyContainsMessage(senderMessageSpy, "Done!"));
     QCOMPARE(senderErrorSpy.count(), 0);
+}
+
+void FileTransferSessionTest::capabilityNegotiationIsAdopted()
+{
+    QTemporaryDir sourceDir, downloadDir;
+    QVERIFY(sourceDir.isValid());
+    QVERIFY(downloadDir.isValid());
+
+    QList<QSharedPointer<QFile>> files;
+    files.append(makeSourceFile(sourceDir.filePath("a.txt"), QByteArray("caps payload")));
+    QVERIFY(files.first());
+
+    Loopback loop;
+    QVERIFY(connectLoopback(loop));
+    QScopedPointer<ProbeReceiver> receiver(
+            new ProbeReceiver(nullptr, loop.serverSide, downloadDir.path()));
+    QScopedPointer<ProbeSender> sender(
+            new ProbeSender(nullptr, loop.clientSide, files, "test-device"));
+
+    QSignalSpy metadataSpy(receiver.data(), &FileTransferSession::fileMetadataReady);
+    QSignalSpy senderMessageSpy(sender.data(), &FileTransferSession::printMessage);
+
+    receiver->start();
+    sender->start();
+
+    QTRY_COMPARE(metadataSpy.count(), 1);
+    // The receiver adopts the sender's negotiation fields with the metadata.
+    QCOMPARE(receiver->peerVersion(), static_cast<int>(Protocol::VERSION));
+    QVERIFY(receiver->peerAcksTransfers());
+
+    receiver->respond(true);
+
+    QTRY_VERIFY(spyContainsMessage(senderMessageSpy, "Done!"));
+    // The sender adopts the receiver's negotiation fields with the response.
+    QCOMPARE(sender->peerVersion(), static_cast<int>(Protocol::VERSION));
+    QVERIFY(sender->peerAcksTransfers());
+}
+
+void FileTransferSessionTest::legacyResponseUsesShortAckGrace()
+{
+    QTemporaryDir sourceDir;
+    QVERIFY(sourceDir.isValid());
+
+    QByteArray content(1000, 'q');
+    QList<QSharedPointer<QFile>> files;
+    files.append(makeSourceFile(sourceDir.filePath("a.bin"), content));
+    QVERIFY(files.first());
+
+    Loopback loop;
+    QVERIFY(connectLoopback(loop));
+    // Real sender with the production acknowledgment windows.
+    QScopedPointer<ProbeSender> sender(
+            new ProbeSender(nullptr, loop.clientSide, files, "test-device"));
+    QScopedPointer<QTcpSocket> rawReceiver(loop.serverSide);
+
+    QSignalSpy senderMessageSpy(sender.data(), &FileTransferSession::printMessage);
+    QSignalSpy senderErrorSpy(sender.data(), &FileTransferSession::errorOccurred);
+
+    sender->start();
+
+    Crypto crypto;
+    QVERIFY(exchangeKeysManually(rawReceiver.data(), crypto));
+
+    QByteArray buffered;
+    QByteArray metadata = readNextFrame(rawReceiver.data(), buffered, crypto);
+    QVERIFY(QJsonDocument::fromJson(metadata).isObject());
+
+    // LANDrop 0.4.0 shape: a bare accept without negotiation fields.
+    QJsonObject response;
+    response.insert("response", 1);
+    rawReceiver->write(makeFrame(crypto,
+                                 QJsonDocument(response).toJson(QJsonDocument::Compact)));
+
+    QByteArray receivedData;
+    while (receivedData.size() < content.size()) {
+        QByteArray chunk = readNextFrame(rawReceiver.data(), buffered, crypto);
+        QVERIFY(!chunk.isEmpty());
+        receivedData += chunk;
+    }
+    QCOMPARE(receivedData, content);
+    QVERIFY(!sender->peerAcksTransfers());
+    QCOMPARE(sender->peerVersion(), 0);
+
+    // A capless peer only gets the short grace window (2 s), well inside the
+    // 8 s ceiling below; the legacy 10 s window would fail this bound.
+    QTRY_VERIFY_WITH_TIMEOUT(spyContainsMessage(senderMessageSpy,
+            "Sent, but the receiver did not confirm delivery."), 8000);
+    QVERIFY(!spyContainsMessage(senderMessageSpy, "Done!"));
+    QCOMPARE(senderErrorSpy.count(), 0);
+}
+
+void FileTransferSessionTest::legacyMetadataStillTransfers()
+{
+    QTemporaryDir downloadDir;
+    QVERIFY(downloadDir.isValid());
+
+    Loopback loop;
+    QVERIFY(connectLoopback(loop));
+    QScopedPointer<ProbeReceiver> receiver(
+            new ProbeReceiver(nullptr, loop.serverSide, downloadDir.path()));
+    QScopedPointer<QTcpSocket> rawSender(loop.clientSide);
+
+    QSignalSpy metadataSpy(receiver.data(), &FileTransferSession::fileMetadataReady);
+    QSignalSpy receiverErrorSpy(receiver.data(), &FileTransferSession::errorOccurred);
+
+    receiver->start();
+
+    Crypto crypto;
+    QVERIFY(exchangeKeysManually(rawSender.data(), crypto));
+
+    // LANDrop 0.4.0 shape: metadata without negotiation fields.
+    QByteArray content("legacy sender bytes");
+    QJsonObject file;
+    file.insert("filename", "legacy.txt");
+    file.insert("size", content.size());
+    QJsonArray filesArray;
+    filesArray.append(file);
+    QJsonObject metadata;
+    metadata.insert("device_name", "legacy-device");
+    metadata.insert("device_type", "test");
+    metadata.insert("files", filesArray);
+    rawSender->write(makeFrame(crypto,
+                               QJsonDocument(metadata).toJson(QJsonDocument::Compact)));
+
+    QTRY_COMPARE(metadataSpy.count(), 1);
+    QCOMPARE(receiver->peerVersion(), 0);
+    QVERIFY(!receiver->peerAcksTransfers());
+
+    receiver->respond(true);
+
+    // The response to a legacy sender still advertises this build's version
+    // and capabilities; a LANDrop 0.4.0 sender ignores the extra keys.
+    QByteArray buffered;
+    QByteArray responseData = readNextFrame(rawSender.data(), buffered, crypto);
+    QJsonDocument responseJson = QJsonDocument::fromJson(responseData);
+    QVERIFY(responseJson.isObject());
+    QJsonObject responseObj = responseJson.object();
+    QCOMPARE(responseObj.value("response").toInt(), 1);
+    QCOMPARE(Protocol::parseVersion(responseObj.value("protocol_version")),
+             static_cast<int>(Protocol::VERSION));
+    QVERIFY(Protocol::parseCaps(responseObj.value("caps")).contains(Protocol::capAck()));
+
+    rawSender->write(makeFrame(crypto, content));
+
+    QTRY_VERIFY(QFileInfo::exists(downloadDir.filePath("legacy.txt")));
+    QFile received(downloadDir.filePath("legacy.txt"));
+    QVERIFY(received.open(QIODevice::ReadOnly));
+    QCOMPARE(received.readAll(), content);
+
+    // The completion acknowledgment is still sent; legacy senders ignore it.
+    QByteArray ack = readNextFrame(rawSender.data(), buffered, crypto);
+    QCOMPARE(QJsonDocument::fromJson(ack).object().value("ack").toInt(), 1);
+    QCOMPARE(receiverErrorSpy.count(), 0);
+}
+
+void FileTransferSessionTest::oversizedCapsListIsTreatedAsLegacy()
+{
+    QTemporaryDir downloadDir;
+    QVERIFY(downloadDir.isValid());
+
+    Loopback loop;
+    QVERIFY(connectLoopback(loop));
+    QScopedPointer<ProbeReceiver> receiver(
+            new ProbeReceiver(nullptr, loop.serverSide, downloadDir.path()));
+    QScopedPointer<QTcpSocket> rawSender(loop.clientSide);
+
+    QSignalSpy metadataSpy(receiver.data(), &FileTransferSession::fileMetadataReady);
+
+    receiver->start();
+
+    Crypto crypto;
+    QVERIFY(exchangeKeysManually(rawSender.data(), crypto));
+
+    QByteArray content("bounded caps");
+    QJsonObject file;
+    file.insert("filename", "bounded.txt");
+    file.insert("size", content.size());
+    QJsonArray filesArray;
+    filesArray.append(file);
+    QJsonArray oversizedCaps;
+    for (int i = 0; i < Protocol::MAX_CAPS + 1; ++i)
+        oversizedCaps.append(QString("cap%1").arg(i));
+    QJsonObject metadata;
+    metadata.insert("device_name", "noisy-device");
+    metadata.insert("device_type", "test");
+    metadata.insert("files", filesArray);
+    metadata.insert("protocol_version", static_cast<int>(Protocol::VERSION));
+    metadata.insert("caps", oversizedCaps);
+    rawSender->write(makeFrame(crypto,
+                               QJsonDocument(metadata).toJson(QJsonDocument::Compact)));
+
+    QTRY_COMPARE(metadataSpy.count(), 1);
+    // The version still parses; the out-of-bounds capability list is
+    // discarded rather than failing the session.
+    QCOMPARE(receiver->peerVersion(), static_cast<int>(Protocol::VERSION));
+    QVERIFY(!receiver->peerAcksTransfers());
+
+    receiver->respond(true);
+    rawSender->write(makeFrame(crypto, content));
+    QTRY_VERIFY(QFileInfo::exists(downloadDir.filePath("bounded.txt")));
 }
 
 int runFileTransferSessionTest(int argc, char *argv[])
