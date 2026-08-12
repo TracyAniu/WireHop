@@ -37,7 +37,9 @@ Advertisement:
 
 - `protocol_version` (positive integer) and `caps` (array of strings) ride additively inside the existing metadata and response frames. LANDrop 0.4.0 parses fixed keys and ignores them.
 - Absent or malformed fields ⇒ the peer is **version 0 with no capabilities**; the session proceeds with legacy semantics. Negotiation can downgrade but never abort a session.
-- Bounds on the untrusted list: at most 32 capabilities, each a string of 1–32 characters. Any violation discards the entire list (fail-to-legacy). Enforced in `WireHop/protocol.cpp`.
+- Bounds on the untrusted list: at most 32 capabilities, each a string of 1–32 **UTF-8 bytes** (not UTF-16 code units — same convention as `MAX_FILENAME_BYTES`). Any violation discards the entire list (fail-to-legacy). Enforced in `WireHop/protocol.cpp`.
+- The `caps` array is serialized in sorted order so frames are byte-reproducible across processes.
+- A capability is "negotiated" only when both the peer advertises it *and* this build implements it (`FileTransferSession::hasNegotiatedCap`), so a peer cannot induce behavior this build does not support by advertising a capability alone.
 - A negotiated feature may take effect only once both sides are informed — i.e. after the response frame has been sent/processed.
 - **Versions vs. capabilities:** bump `protocol_version` only for changes that break the message format itself (framing, key exchange, mandatory fields); everything orthogonal is a capability. Unknown capabilities must be ignored.
 
@@ -45,15 +47,18 @@ Advertisement:
 
 | Capability | Meaning |
 | --- | --- |
-| `ack` | The receiver sends `{"ack":1}` after committing every file. A sender grants the full 10 s acknowledgment window only to peers that advertised `ack`; capless peers get a 2 s grace window (their fast acknowledgment or close is still honored) before the qualified "sent, not confirmed" completion. |
+| `ack` | Endpoint-level: "this build implements the completion-acknowledgment extension" in whichever role it plays. As receiver it sends `{"ack":1}` after committing every file; as sender it honors one. A sender grants the full 10 s acknowledgment window only to peers with which `ack` is negotiated; capless peers get a 2 s grace window (their fast acknowledgment or close is still honored) before the qualified "sent, not confirmed" completion. |
+
+The receiver sends its `{"ack":1}` **unconditionally**, not gated on the sender advertising `ack`. This is deliberate: the frame is additive and ignored by legacy senders, whereas gating it would withhold acknowledgments from any sender that does not advertise caps and regress that sender to a qualified-success message. Capabilities gate *behavior changes*; they do not gate additive frames that legacy peers already tolerate.
 
 ### Compatibility matrix
 
-| Sender \ Receiver | LANDrop 0.4.0 | WireHop 0.1.0 (acks, no caps) | WireHop ≥ 0.2 |
-| --- | --- | --- | --- |
-| LANDrop 0.4.0 | unchanged | unchanged | unchanged; extra response keys ignored by the sender |
-| WireHop 0.1.0 | unchanged | unchanged | works; 0.1.0 sender keeps its unconditional 10 s window and receives the ACK quickly |
-| WireHop ≥ 0.2 | grace window, qualified success (or immediate on close) | ACK inside the grace ⇒ "Done!"; a commit slower than the grace shows qualified success | full negotiation, 10 s window, confirmed completion |
+| Sender \ Receiver | LANDrop 0.4.0 | WireHop (this release onward) |
+| --- | --- | --- |
+| LANDrop 0.4.0 | unchanged | unchanged; extra response keys ignored by the sender |
+| WireHop (this release onward) | receiver closes on completion ⇒ sender resolves immediately with qualified success; the 2 s grace only elapses for a peer that neither acknowledges nor closes | full negotiation, 10 s window, confirmed completion |
+
+**On the "acks but advertises no caps" peer class:** it does not exist in any released build. The completion ACK and capability negotiation are unreleased and ship together, so no deployed WireHop sends an ACK without also advertising `ack`. The 2 s grace therefore cannot demote a real peer that would otherwise have been confirmed; it only shortens the dead wait for a peer that goes silent without closing. Should an ACK-without-caps build ever be distributed, revisit the grace duration — the grace timer starts when the sender's last bytes reach the kernel, not when the receiver has them.
 
 ## Rules for future changes
 

@@ -63,7 +63,7 @@ int FileTransferSender::watchdogIntervalMsecs() const
         return RESPONSE_TIMEOUT_MSECS;
     // Only peers that negotiated the "ack" capability earn the full
     // acknowledgment window; see ACK_GRACE_TIMEOUT_MSECS.
-    if (state == WAITING_FOR_ACK && !peerHasCap(Protocol::capAck()))
+    if (state == WAITING_FOR_ACK && !hasNegotiatedCap(Protocol::capAck()))
         return ACK_GRACE_TIMEOUT_MSECS;
     return FileTransferSession::watchdogIntervalMsecs();
 }

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
+#include <algorithm>
+
 #include <QJsonArray>
+#include <QStringList>
 
 #include "protocol.h"
 
@@ -20,8 +23,16 @@ QSet<QString> localCaps()
 
 void insertNegotiationFields(QJsonObject &obj)
 {
-    QJsonArray caps;
+    // Sorted so the serialized frame is byte-reproducible: QSet iteration
+    // order varies per process (randomized qHash seed), and future work may
+    // bind these bytes into a transcript digest.
+    QStringList sorted;
     foreach (const QString &cap, localCaps())
+        sorted.append(cap);
+    std::sort(sorted.begin(), sorted.end());
+
+    QJsonArray caps;
+    foreach (const QString &cap, sorted)
         caps.append(cap);
     obj.insert("protocol_version", static_cast<int>(VERSION));
     obj.insert("caps", caps);
@@ -52,7 +63,11 @@ QSet<QString> parseCaps(const QJsonValue &value)
         if (!v.isString())
             return QSet<QString>();
         QString cap = v.toString();
-        if (cap.isEmpty() || cap.size() > MAX_CAP_LENGTH)
+        // Bounded in UTF-8 bytes, matching FileTransferPolicy's convention on
+        // this trust boundary: QString::size() counts UTF-16 code units, which
+        // would admit up to 4x the intended byte length.
+        int capBytes = cap.toUtf8().size();
+        if (capBytes == 0 || capBytes > MAX_CAP_BYTES)
             return QSet<QString>();
         caps.insert(cap);
     }

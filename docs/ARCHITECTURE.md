@@ -93,7 +93,7 @@ On first launch, `Settings` copies compatible preferences from the legacy `LANDr
 
 ## Known Tradeoffs and Risks
 
-- The Qt Test suite covers transfer-policy and crypto error paths, but there is no automated loopback peer-transfer or UI suite yet.
+- The Qt Test suite covers transfer-policy, crypto error paths, and GUI-free loopback peer transfers including protocol negotiation, but there is no automated UI/dialog suite and no automated two-machine coverage yet.
 - Wire changes must follow the version/capability negotiation rules in `docs/references/PROTOCOL.md`: new features are capabilities gated on values adopted inside the encrypted session, and `protocol_version` bumps are reserved for message-format breaks.
 - Discovery trusts unauthenticated LAN broadcasts. The session code and receiver confirmation are the user-visible peer check.
 - Incoming filenames and declared sizes cross a trust boundary. Current limits and non-overwriting commit behavior are centralized in `FileTransferPolicy`; see `docs/SECURITY.md` before changing them.

@@ -76,7 +76,7 @@ protected:
     QTimer watchdogTimer;
     bool encryptAndSend(const QByteArray &data, bool emitErrors = true);
     void adoptPeerNegotiation(const QJsonObject &obj);
-    bool peerHasCap(const QString &cap) const;
+    bool hasNegotiatedCap(const QString &cap) const;
     void touchWatchdog();
     virtual int watchdogIntervalMsecs() const;
     virtual void watchdogTimedOut();

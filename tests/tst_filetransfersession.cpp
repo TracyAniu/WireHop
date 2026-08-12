@@ -27,11 +27,14 @@ protected:
     }
 };
 
-// Models a LANDrop 0.4.0 receiver: completes the transfer and closes the
-// socket without ever sending the completion acknowledgment.
-class LegacyReceiver : public FileTransferReceiver {
+// A WireHop receiver that negotiates the "ack" capability and then never
+// delivers one, closing the socket instead. Note this is deliberately NOT a
+// LANDrop 0.4.0 model: it inherits respond(), so it advertises caps. The
+// capless peer shapes are emulated on raw sockets in
+// legacyResponseUsesShortAckGrace and legacyMetadataStillTransfers.
+class SilentAckReceiver : public FileTransferReceiver {
 public:
-    LegacyReceiver(QObject *parent, QTcpSocket *socket, const QString &downloadPath) :
+    SilentAckReceiver(QObject *parent, QTcpSocket *socket, const QString &downloadPath) :
         FileTransferReceiver(parent, socket, downloadPath) {}
 protected:
     void sendCompletionAck() override {}
@@ -58,7 +61,7 @@ public:
                 const QString &deviceName) :
         FileTransferSender(parent, socket, files, deviceName) {}
     int peerVersion() const { return peerProtocolVersion; }
-    bool peerAcksTransfers() const { return peerHasCap(Protocol::capAck()); }
+    bool peerAcksTransfers() const { return hasNegotiatedCap(Protocol::capAck()); }
 };
 
 class ProbeReceiver : public FileTransferReceiver {
@@ -66,7 +69,7 @@ public:
     ProbeReceiver(QObject *parent, QTcpSocket *socket, const QString &downloadPath) :
         FileTransferReceiver(parent, socket, downloadPath) {}
     int peerVersion() const { return peerProtocolVersion; }
-    bool peerAcksTransfers() const { return peerHasCap(Protocol::capAck()); }
+    bool peerAcksTransfers() const { return hasNegotiatedCap(Protocol::capAck()); }
 };
 
 // Manual-peer helpers for emulating LANDrop 0.4.0 endpoints on a raw socket.
@@ -100,7 +103,13 @@ QByteArray readNextFrame(QTcpSocket *socket, QByteArray &buffered, Crypto &crypt
             if (buffered.size() >= size + 2) {
                 QByteArray frame = buffered.mid(2, size);
                 buffered = buffered.mid(size + 2);
-                return crypto.decrypt(frame);
+                // Never let a decrypt failure unwind through QTest: that
+                // terminates the binary and loses every remaining result.
+                try {
+                    return crypto.decrypt(frame);
+                } catch (const std::exception &) {
+                    return QByteArray();
+                }
             }
         }
         if (!QTest::qWaitFor([socket]() { return socket->bytesAvailable() > 0; }, 5000))
@@ -396,15 +405,9 @@ void FileTransferSessionTest::malformedMetadataIsRejected()
     receiver->start();
 
     Crypto crypto;
-    QTRY_VERIFY(static_cast<quint64>(rawClient->bytesAvailable()) >= crypto.publicKeySize());
-    crypto.setRemotePublicKey(rawClient->read(static_cast<qint64>(crypto.publicKeySize())));
-    rawClient->write(crypto.localPublicKey());
+    QVERIFY(exchangeKeysManually(rawClient.data(), crypto));
 
-    QByteArray frame = crypto.encrypt("this is not json metadata");
-    quint16 size = static_cast<quint16>(frame.size());
-    frame.prepend(static_cast<char>(size & 0xFF));
-    frame.prepend(static_cast<char>((size >> 8) & 0xFF));
-    rawClient->write(frame);
+    rawClient->write(makeFrame(crypto, "this is not json metadata"));
 
     QTRY_COMPARE(errorSpy.count(), 1);
     QVERIFY(QDir(downloadDir.path()).entryList(QDir::Files | QDir::Hidden).isEmpty());
@@ -422,8 +425,8 @@ void FileTransferSessionTest::unconfirmedWhenReceiverSkipsAck()
 
     Loopback loop;
     QVERIFY(connectLoopback(loop));
-    QScopedPointer<LegacyReceiver> receiver(
-            new LegacyReceiver(nullptr, loop.serverSide, downloadDir.path()));
+    QScopedPointer<SilentAckReceiver> receiver(
+            new SilentAckReceiver(nullptr, loop.serverSide, downloadDir.path()));
     QScopedPointer<FileTransferSender> sender(
             new FileTransferSender(nullptr, loop.clientSide, files, "test-device"));
 
@@ -472,43 +475,20 @@ void FileTransferSessionTest::unconfirmedWhenAckNeverArrives()
     // Drive a manual receiver that accepts and drains the transfer but never
     // acknowledges and never closes the connection.
     Crypto crypto;
-    QTRY_VERIFY(static_cast<quint64>(rawReceiver->bytesAvailable()) >= crypto.publicKeySize());
-    crypto.setRemotePublicKey(rawReceiver->read(static_cast<qint64>(crypto.publicKeySize())));
-    rawReceiver->write(crypto.localPublicKey());
+    QVERIFY(exchangeKeysManually(rawReceiver.data(), crypto));
 
     QByteArray buffered;
-    auto readFrame = [&]() -> QByteArray {
-        while (true) {
-            buffered += rawReceiver->readAll();
-            if (buffered.size() >= 2) {
-                quint16 size = static_cast<quint16>(static_cast<quint8>(buffered[0])) << 8;
-                size |= static_cast<quint8>(buffered[1]);
-                if (buffered.size() >= size + 2) {
-                    QByteArray frame = buffered.mid(2, size);
-                    buffered = buffered.mid(size + 2);
-                    return crypto.decrypt(frame);
-                }
-            }
-            if (!QTest::qWaitFor([&]() { return rawReceiver->bytesAvailable() > 0; }, 5000))
-                return QByteArray();
-        }
-    };
-
-    QByteArray metadata = readFrame();
+    QByteArray metadata = readNextFrame(rawReceiver.data(), buffered, crypto);
     QVERIFY(QJsonDocument::fromJson(metadata).isObject());
 
     QJsonObject response;
     response.insert("response", 1);
-    QByteArray responseFrame =
-            crypto.encrypt(QJsonDocument(response).toJson(QJsonDocument::Compact));
-    quint16 responseSize = static_cast<quint16>(responseFrame.size());
-    responseFrame.prepend(static_cast<char>(responseSize & 0xFF));
-    responseFrame.prepend(static_cast<char>((responseSize >> 8) & 0xFF));
-    rawReceiver->write(responseFrame);
+    rawReceiver->write(makeFrame(crypto,
+                                 QJsonDocument(response).toJson(QJsonDocument::Compact)));
 
     QByteArray receivedData;
     while (receivedData.size() < content.size()) {
-        QByteArray chunk = readFrame();
+        QByteArray chunk = readNextFrame(rawReceiver.data(), buffered, crypto);
         QVERIFY(!chunk.isEmpty());
         receivedData += chunk;
     }

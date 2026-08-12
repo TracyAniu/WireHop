@@ -16,9 +16,10 @@ enum {
     // Highest message-format version this build speaks. Version 0 is the
     // implicit LANDrop 0.4.0 wire format (no negotiation fields).
     VERSION = 1,
-    // Bounds enforced on the untrusted peer capability list.
+    // Bounds enforced on the untrusted peer capability list. The per-entry
+    // bound is in UTF-8 bytes, as elsewhere on this trust boundary.
     MAX_CAPS = 32,
-    MAX_CAP_LENGTH = 32
+    MAX_CAP_BYTES = 32
 };
 
 // Capability identifiers. Values are wire format; keep them stable.

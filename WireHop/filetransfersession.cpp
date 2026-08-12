@@ -145,9 +145,12 @@ void FileTransferSession::adoptPeerNegotiation(const QJsonObject &obj)
     peerCaps = Protocol::parseCaps(obj.value("caps"));
 }
 
-bool FileTransferSession::peerHasCap(const QString &cap) const
+bool FileTransferSession::hasNegotiatedCap(const QString &cap) const
 {
-    return peerCaps.contains(cap);
+    // The negotiated intersection, not a raw peer claim: a capability counts
+    // only when this build also implements it, so gating on a capability the
+    // peer advertises but we cannot honor is impossible by construction.
+    return peerCaps.contains(cap) && Protocol::localCaps().contains(cap);
 }
 
 void FileTransferSession::socketReadyRead()

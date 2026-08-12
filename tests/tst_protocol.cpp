@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
+#include <algorithm>
+
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QStringList>
 #include <QtTest>
 
 #include "protocol.h"
@@ -13,7 +16,9 @@ private slots:
     void versionRejectsMalformedValues();
     void capsParseBoundedStringArrays();
     void capsRejectMalformedArrays();
+    void capsAcceptMaximumByteLengthEntry();
     void negotiationFieldsRoundTrip();
+    void negotiationFieldOrderIsDeterministic();
 };
 
 void ProtocolTest::versionParsesSanePositiveIntegers()
@@ -60,12 +65,42 @@ void ProtocolTest::capsRejectMalformedArrays()
     QVERIFY(Protocol::parseCaps(nonString).isEmpty());
 
     QJsonArray oversizedEntry;
-    oversizedEntry.append(QString(Protocol::MAX_CAP_LENGTH + 1, QLatin1Char('a')));
+    oversizedEntry.append(QString(Protocol::MAX_CAP_BYTES + 1, QLatin1Char('a')));
     QVERIFY(Protocol::parseCaps(oversizedEntry).isEmpty());
 
     QJsonArray emptyEntry;
     emptyEntry.append("");
     QVERIFY(Protocol::parseCaps(emptyEntry).isEmpty());
+
+    // The bound is UTF-8 bytes, not UTF-16 code units: 16 CJK characters fit
+    // QString::size() <= 32 but carry 48 bytes.
+    QJsonArray multiByteEntry;
+    multiByteEntry.append(QString(16, QChar(0x4E2D)));
+    QVERIFY(Protocol::parseCaps(multiByteEntry).isEmpty());
+}
+
+void ProtocolTest::capsAcceptMaximumByteLengthEntry()
+{
+    QJsonArray atBound;
+    atBound.append(QString(Protocol::MAX_CAP_BYTES, QLatin1Char('a')));
+    QCOMPARE(Protocol::parseCaps(atBound).size(), 1);
+}
+
+void ProtocolTest::negotiationFieldOrderIsDeterministic()
+{
+    // The serialized capability array must be byte-reproducible across
+    // processes; QSet iteration order is not.
+    QJsonObject obj;
+    Protocol::insertNegotiationFields(obj);
+    QJsonArray caps = obj.value("caps").toArray();
+
+    QStringList emitted;
+    foreach (const QJsonValue &v, caps)
+        emitted.append(v.toString());
+
+    QStringList sorted = emitted;
+    std::sort(sorted.begin(), sorted.end());
+    QCOMPARE(emitted, sorted);
 }
 
 void ProtocolTest::negotiationFieldsRoundTrip()

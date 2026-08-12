@@ -8,7 +8,7 @@ WireHop inherited the LANDrop 0.4.0 wire format, which has no version field; `do
 
 In-session, additive negotiation. The sender's metadata frame and the receiver's response frame each carry `protocol_version` (this build: 1) and `caps` (string array). Rules: absent or malformed fields mean a version-0 peer with no capabilities and never abort a session; the untrusted list is bounded (≤ 32 entries, 1–32 chars, strings only) and discarded wholesale on any violation; negotiated features take effect only after the response frame; version bumps are reserved for message-format breaks while orthogonal features are capabilities; unknown capabilities are ignored. Discovery advertisements carry the same fields strictly as hints — discovery is unauthenticated UDP and must not gate behavior.
 
-`ack` is the first formalized capability: the sender keeps the 10-second acknowledgment window only for peers that advertised it, and applies a 2-second grace window otherwise, so LANDrop 0.4.0 receivers that neither acknowledge nor close no longer stall the sender for 10 seconds.
+`ack` is the first formalized capability: the sender keeps the 10-second acknowledgment window only for peers with which it is negotiated, and applies a 2-second grace window otherwise, so a receiver that neither acknowledges nor closes no longer stalls the sender for 10 seconds. Scope note (verified 2026-08-12): a LANDrop 0.4.0 receiver calls `disconnectFromHost()` on completion, so it already resolved the sender immediately via the socket-close path — the grace changes nothing for it. No released build acknowledges without advertising `ack` (both features are unreleased and ship together), so the grace demotes no real peer. Its remaining value is bounding the dead wait for a silent, non-closing peer.
 
 ## Alternatives considered
 
@@ -20,4 +20,6 @@ Wire compatibility is purely additive; the full pairing matrix is recorded in `d
 
 ## Validation
 
-`tst_protocol.cpp` covers the bounded parsers. The loopback suite covers v1↔v1 adoption on both ends, LANDrop-0.4.0-shaped metadata and response peers emulated on raw sockets, an out-of-bounds capability list degrading to legacy while the transfer completes, and the grace-window bound (< 8 s where the legacy window was 10 s). Compile/test execution status is tracked in `docs/exec-plans/active/protocol-versioning.md`.
+`tst_protocol.cpp` covers the bounded parsers, the UTF-8 byte bound, and deterministic capability ordering. The loopback suite covers v1↔v1 adoption on both ends, LANDrop-0.4.0-shaped metadata and response peers emulated on raw sockets, an out-of-bounds capability list degrading to legacy while the transfer completes, and the grace-window bound (< 8 s where the legacy window was 10 s).
+
+Executed on macOS 15.7 / Qt 5.15.16 arm64 on 2026-08-12: `lint.sh`, `typecheck.sh`, `test.sh` (48 passing), and `smoke.sh` all green. Two-machine transfer remains manually unverified; see `docs/exec-plans/completed/protocol-versioning.md`.
