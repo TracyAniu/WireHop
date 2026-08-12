@@ -143,6 +143,7 @@ private slots:
     void legacyResponseUsesShortAckGrace();
     void legacyMetadataStillTransfers();
     void oversizedCapsListIsTreatedAsLegacy();
+    void rejectionFromPromptlyClosingPeerSurfacesOnce();
 private:
     struct Loopback {
         QTcpServer server;
@@ -700,6 +701,48 @@ void FileTransferSessionTest::oversizedCapsListIsTreatedAsLegacy()
     receiver->respond(true);
     rawSender->write(makeFrame(crypto, content));
     QTRY_VERIFY(QFileInfo::exists(downloadDir.filePath("bounded.txt")));
+}
+
+void FileTransferSessionTest::rejectionFromPromptlyClosingPeerSurfacesOnce()
+{
+    QTemporaryDir sourceDir;
+    QVERIFY(sourceDir.isValid());
+
+    QList<QSharedPointer<QFile>> files;
+    files.append(makeSourceFile(sourceDir.filePath("a.txt"), QByteArray("rejected")));
+    QVERIFY(files.first());
+
+    Loopback loop;
+    QVERIFY(connectLoopback(loop));
+    QScopedPointer<ProbeSender> sender(
+            new ProbeSender(nullptr, loop.clientSide, files, "test-device"));
+    QScopedPointer<QTcpSocket> rawReceiver(loop.serverSide);
+
+    QSignalSpy errorSpy(sender.data(), &FileTransferSession::errorOccurred);
+    sender->start();
+
+    Crypto crypto;
+    QVERIFY(exchangeKeysManually(rawReceiver.data(), crypto));
+
+    QByteArray buffered;
+    QVERIFY(!readNextFrame(rawReceiver.data(), buffered, crypto).isEmpty());
+
+    // Decline and close at once, as any peer may. The reason the user needs
+    // must not then be overwritten by a generic socket error.
+    QJsonObject response;
+    response.insert("response", 0);
+    rawReceiver->write(makeFrame(crypto,
+                                 QJsonDocument(response).toJson(QJsonDocument::Compact)));
+    QVERIFY(rawReceiver->waitForBytesWritten(5000));
+    rawReceiver->close();
+
+    QTRY_COMPARE(errorSpy.count(), 1);
+    QCOMPARE(errorSpy.at(0).first().toString(),
+             QStringLiteral("The receiving device rejected your file(s)."));
+
+    // Give a spurious follow-up error time to appear if the fix regresses.
+    QTest::qWait(500);
+    QCOMPARE(errorSpy.count(), 1);
 }
 
 int runFileTransferSessionTest(int argc, char *argv[])

@@ -19,6 +19,7 @@ SOURCES += \
     tst_filetransfersession.cpp \
     tst_protocol.cpp \
     tst_protocolvectors.cpp \
+    tst_interop.cpp \
     ../WireHop/crypto.cpp \
     ../WireHop/filetransferpolicy.cpp \
     ../WireHop/filetransferreceiver.cpp \

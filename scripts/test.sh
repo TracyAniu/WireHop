@@ -12,6 +12,15 @@ if [[ "$qt_version" != 5.* ]]; then
     exit 2
 fi
 
+# Build the Rust peer first: the Qt interop suite drives it as a subprocess.
+# When no toolchain is present run_cargo skips, WIREHOP_CLI_BIN stays unset,
+# and the interop cases skip too (or fail, under WIREHOP_REQUIRE_RUST=1).
+run_cargo build -p wirehop-cli
+cli_bin="$CORE_DIR/target/debug/wirehop-cli"
+if [[ -x "$cli_bin" ]]; then
+    export WIREHOP_CLI_BIN="$cli_bin"
+fi
+
 mkdir -p "$TEST_BUILD_DIR"
 qmake_args=("$REPO_ROOT/tests/tests.pro")
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists libsodium; then

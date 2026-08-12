@@ -163,6 +163,12 @@ void FileTransferSender::processReceivedData(const QByteArray &data)
         adoptPeerNegotiation(obj);
 
         if (response.toInt() == 0) {
+            // Terminal state first: a peer that closes immediately after
+            // declining would otherwise re-enter handleSocketError() and
+            // replace the reason the user needs with "the remote host closed
+            // the connection". Nothing obliges a peer to linger after a
+            // rejection, and the Rust core does not.
+            state = FINISHED;
             emit errorOccurred(tr("The receiving device rejected your file(s)."));
             return;
         }

@@ -62,16 +62,16 @@ Sequencing note: the owner ranked performance ahead of security, but the TLS 1.3
 - [x] Extend `scripts/{lint,typecheck,test}.sh` with the Rust steps, with graceful skip plus `WIREHOP_REQUIRE_RUST=1` strict mode.
 - [x] Extend CI to install Rust, cache the build, and run both suites with strict mode; packaging stays gated on them.
 - [x] Docs: `AGENTS.md` (repo map, stable commands, fixture rule), `docs/TESTING.md` (conformance gate).
-- [ ] Build the loopback interop test (Rust CLI ↔ Qt session, both directions) and add it to `test.sh`. **Not started.**
-- [ ] `docs/ARCHITECTURE.md`: two implementations, one spec. **Not started.**
+- [x] Build the loopback interop test (Rust CLI ↔ Qt session, both directions) and add it to `test.sh`.
+- [x] `docs/ARCHITECTURE.md`: two implementations, one spec.
 
 ## Validation
 
 - [x] `./scripts/lint.sh` (shell + `cargo fmt --check` + `cargo clippy -D warnings`, all clean)
 - [x] `./scripts/typecheck.sh` (Qt build + `cargo check --all-targets`)
-- [x] `./scripts/test.sh` — **55 Qt cases + 41 Rust cases, 0 failures**, including both halves of the conformance gate.
+- [x] `./scripts/test.sh` — **61 Qt cases + 49 Rust cases, 0 failures**, including both conformance halves and live interop.
 - [x] `./scripts/smoke.sh` — re-run after the `Crypto` refactor; app launched and stayed alive.
-- [ ] Interop verified in both directions with byte-comparison of delivered files, and the negotiated `ack` observed. **Not done — the loopback interop test is unwritten.**
+- [x] Interop verified in both directions with byte-comparison of delivered files, and the negotiated `ack` observed.
 - [x] Toolchain-absent path exercised: `run_cargo` skips with a clear message and returns 0; `WIREHOP_REQUIRE_RUST=1` returns 2.
 
 ## Progress Log
@@ -94,4 +94,15 @@ Resolved during implementation: repository layout is a single repo (`core/` besi
 
 ## Completion Notes
 
-(to be filled at completion)
+M0 is complete. `core/` holds a clean-room Rust implementation of wire protocol v1 (crypto, framing, negotiation, validation, non-overwriting commit, blocking sender/receiver sessions) plus `wirehop-cli`, and two mechanical gates now hold it to the C++/Qt baseline:
+
+- **Conformance vectors** — both implementations verify `docs/references/protocol-vectors.json`; the Rust side re-emits it so the committed file cannot go stale.
+- **Live interop** — `tests/tst_interop.cpp` runs real transfers in both directions between the Qt session objects and the Rust process, checking byte-identical delivery, negotiated capabilities, the acknowledgment, and that a rejection surfaces as a rejection.
+
+Validation: lint, typecheck, smoke green; 61 Qt + 49 Rust cases, zero failures, all with `WIREHOP_REQUIRE_RUST=1`.
+
+**The gates earned their keep immediately.** Writing the second implementation exposed three ambiguities in `PROTOCOL.md` (session-code derivation, file-data framing rules, independent field degradation), and the interop test exposed a real defect in the shipping application: after a peer declined a transfer, the sender emitted a second, misleading error ("The remote host closed the connection") that replaced the actual reason, because it left `state` at `HANDSHAKE2` and the close re-entered the error path. The pure-Qt loopback suite could never have caught it — the Qt receiver lingers after declining, while the Rust receiver exits promptly, which the specification permits. Fixed in `FileTransferSender::processReceivedData` and pinned by `rejectionFromPromptlyClosingPeerSurfacesOnce`, which models the prompt-closing peer on a raw socket so the regression test does not depend on the Rust binary.
+
+That fix is a deliberate deviation from this plan's "no changes to the Qt application's behavior" non-goal: it is a user-visible defect, the fix is one line, and leaving it to honor a scope boundary would have been the wrong trade.
+
+**Not verified:** two-machine transfer and non-macOS runtime, as ever. The Rust core has no discovery, no UI, and no persistence; its session layer is blocking and single-transfer. Interoperability with a genuine LANDrop 0.4.0 binary is still only emulated, never run against the real application.

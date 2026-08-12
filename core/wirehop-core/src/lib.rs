@@ -19,6 +19,8 @@ pub mod frame;
 pub mod message;
 pub mod policy;
 pub mod protocol;
+pub mod session;
+pub mod store;
 
 /// Errors surfaced by the core.
 ///

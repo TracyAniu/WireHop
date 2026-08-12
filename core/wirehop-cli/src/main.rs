@@ -10,17 +10,26 @@ use std::process::ExitCode;
 use wirehop_core::message::{self, FileMetadata, Metadata};
 use wirehop_core::protocol;
 
+mod peer;
+
 fn usage() -> ExitCode {
-    eprintln!("usage: wirehop-cli emit-vectors");
+    eprintln!("usage: wirehop-cli <command>");
+    eprintln!("  emit-vectors");
+    eprintln!("  send --port P [--host H] [--name N] FILE...");
+    eprintln!("  receive --dir D [--port P] [--reject]");
     ExitCode::from(2)
 }
 
 fn main() -> ExitCode {
-    match std::env::args().nth(1).as_deref() {
+    let argv: Vec<String> = std::env::args().collect();
+    let rest: Vec<String> = argv.iter().skip(2).cloned().collect();
+    match argv.get(1).map(String::as_str) {
         Some("emit-vectors") => {
             println!("{}", vectors::render());
             ExitCode::SUCCESS
         }
+        Some("send") => peer::send(&rest),
+        Some("receive") => peer::receive(&rest),
         _ => usage(),
     }
 }
