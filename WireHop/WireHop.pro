@@ -15,6 +15,7 @@ SOURCES += \
     filetransferserver.cpp \
     filetransfersession.cpp \
     main.cpp \
+    protocol.cpp \
     selectfilesdialog.cpp \
     sendtodialog.cpp \
     settings.cpp \
@@ -31,6 +32,7 @@ HEADERS += \
     filetransfersender.h \
     filetransferserver.h \
     filetransfersession.h \
+    protocol.h \
     selectfilesdialog.h \
     sendtodialog.h \
     settings.h \
@@ -82,3 +84,16 @@ unix {
 }
 
 QMAKE_INFO_PLIST = Info.plist
+
+macx {
+    HEADERS += macservices.h
+    OBJECTIVE_SOURCES += macservices.mm
+    LIBS += -framework AppKit
+
+    infoplist_locales.files = locales/zh-Hans.lproj
+    infoplist_locales.path = Contents/Resources
+    QMAKE_BUNDLE_DATA += infoplist_locales
+
+    # Embed the Share-sheet extension after linking (see shareext/).
+    QMAKE_POST_LINK += $$shell_quote($$PWD/../scripts/build-share-extension.sh) $$shell_quote($$OUT_PWD/WireHop.app)
+}

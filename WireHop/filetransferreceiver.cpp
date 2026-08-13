@@ -30,21 +30,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <QDesktopServices>
 #include <QDir>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QStorageInfo>
 #include <QTimer>
-#include <QUrl>
 
 #include "filetransferpolicy.h"
 #include "filetransferreceiver.h"
-#include "settings.h"
+#include "protocol.h"
 
-FileTransferReceiver::FileTransferReceiver(QObject *parent, QTcpSocket *socket) :
-    FileTransferSession(parent, socket), writingFile(nullptr), downloadPath(Settings::downloadPath()) {}
+FileTransferReceiver::FileTransferReceiver(QObject *parent, QTcpSocket *socket, const QString &downloadPath) :
+    FileTransferSession(parent, socket), writingFile(nullptr), downloadPath(downloadPath) {}
 
 void FileTransferReceiver::respond(bool accepted)
 {
@@ -73,6 +71,7 @@ void FileTransferReceiver::respond(bool accepted)
 
     QJsonObject obj;
     obj.insert("response", static_cast<int>(accepted));
+    Protocol::insertNegotiationFields(obj);
     if (!encryptAndSend(QJsonDocument(obj).toJson(QJsonDocument::Compact)))
         return;
 
@@ -83,6 +82,7 @@ void FileTransferReceiver::respond(bool accepted)
         state = FINISHED;
         connect(socket, &QTcpSocket::bytesWritten, this, &FileTransferReceiver::ended);
     }
+    touchWatchdog();
 }
 
 void FileTransferReceiver::processReceivedData(const QByteArray &data)
@@ -150,6 +150,7 @@ void FileTransferReceiver::processReceivedData(const QByteArray &data)
 
         transferQ = metadata;
         totalSize = declaredTotalSize;
+        adoptPeerNegotiation(obj);
         state = AWAITING_RESPONSE;
         emit fileMetadataReady(transferQ, totalSize, deviceName.toString(),
                                crypto.sessionKeyDigest());
@@ -242,9 +243,20 @@ void FileTransferReceiver::createNextFile()
     }
     if (transferQ.empty()) {
         state = FINISHED;
-        QDesktopServices::openUrl(QUrl::fromLocalFile(downloadPath));
+        touchWatchdog();
+        sendCompletionAck();
+        emit openDownloadFolder(downloadPath);
         emit printMessage(tr("Done!"));
         socket->disconnectFromHost();
         QTimer::singleShot(5000, this, &FileTransferSession::ended);
     }
+}
+
+void FileTransferReceiver::sendCompletionAck()
+{
+    // Additive protocol frame: legacy LANDrop 0.4.0 senders silently ignore
+    // it. Best-effort only; a send failure must not fail a committed transfer.
+    QJsonObject obj;
+    obj.insert("ack", 1);
+    encryptAndSend(QJsonDocument(obj).toJson(QJsonDocument::Compact), false);
 }

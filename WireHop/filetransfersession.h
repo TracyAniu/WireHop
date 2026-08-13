@@ -32,8 +32,11 @@
 
 #pragma once
 
+#include <QJsonObject>
 #include <QObject>
+#include <QSet>
 #include <QTcpSocket>
+#include <QTimer>
 
 #include "crypto.h"
 
@@ -53,15 +56,31 @@ protected:
         HANDSHAKE2,
         AWAITING_RESPONSE,
         TRANSFERRING,
+        WAITING_FOR_ACK,
         FINISHED
     } state;
+    enum {
+        HANDSHAKE_TIMEOUT_MSECS = 30000,
+        RESPONSE_TIMEOUT_MSECS = 300000,
+        STALL_TIMEOUT_MSECS = 60000,
+        ACK_TIMEOUT_MSECS = 10000
+    };
     QTcpSocket *socket;
     Crypto crypto;
     QByteArray readBuffer;
     QList<FileMetadata> transferQ;
     quint64 totalSize;
     quint64 transferredSize;
-    bool encryptAndSend(const QByteArray &data);
+    int peerProtocolVersion;
+    QSet<QString> peerCaps;
+    QTimer watchdogTimer;
+    bool encryptAndSend(const QByteArray &data, bool emitErrors = true);
+    void adoptPeerNegotiation(const QJsonObject &obj);
+    bool hasNegotiatedCap(const QString &cap) const;
+    void touchWatchdog();
+    virtual int watchdogIntervalMsecs() const;
+    virtual void watchdogTimedOut();
+    virtual void handleSocketError();
     virtual void handshake1Finished();
     virtual void processReceivedData(const QByteArray &data) = 0;
 private slots:
@@ -71,6 +90,7 @@ signals:
     void printMessage(const QString &msg);
     void updateProgress(double progress);
     void errorOccurred(const QString &msg);
+    void openDownloadFolder(const QString &path);
     void fileMetadataReady(const QList<FileTransferSession::FileMetadata> &metadata, quint64 totalSize,
                            const QString &deviceName, const QString &sessionKeyDigest);
     void ended();

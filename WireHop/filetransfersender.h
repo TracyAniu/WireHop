@@ -39,13 +39,25 @@
 class FileTransferSender : public FileTransferSession {
     Q_OBJECT
 public:
-    FileTransferSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files);
+    FileTransferSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files,
+                       const QString &deviceName);
 private:
     enum {
-        TRANSFER_QUANTA = 64000
+        TRANSFER_QUANTA = 64000,
+        // Short acknowledgment window for peers that did not negotiate the
+        // "ack" capability (LANDrop 0.4.0 and WireHop <= 0.1.0). Their fast
+        // acknowledgment or close is still caught without stalling the
+        // sender for the full ACK_TIMEOUT_MSECS.
+        ACK_GRACE_TIMEOUT_MSECS = 2000
     };
     QList<QSharedPointer<QFile>> files;
+    QString deviceName;
+    void finishConfirmed();
+    void finishUnconfirmed();
 protected:
+    int watchdogIntervalMsecs() const;
+    void watchdogTimedOut();
+    void handleSocketError();
     void handshake1Finished();
     void processReceivedData(const QByteArray &data);
 private slots:

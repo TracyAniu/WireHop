@@ -37,7 +37,7 @@
 #include "filetransferserver.h"
 #include "settings.h"
 
-FileTransferServer::FileTransferServer(QObject *parent) : QObject(parent) {}
+FileTransferServer::FileTransferServer(QObject *parent) : QObject(parent), activeSessions(0) {}
 
 void FileTransferServer::start()
 {
@@ -56,8 +56,21 @@ quint16 FileTransferServer::port()
 void FileTransferServer::serverNewConnection()
 {
     while (server.hasPendingConnections()) {
-        FileTransferReceiver *receiver = new FileTransferReceiver(nullptr, server.nextPendingConnection());
+        QTcpSocket *socket = server.nextPendingConnection();
+        if (activeSessions >= MAX_CONCURRENT_SESSIONS) {
+            socket->abort();
+            socket->deleteLater();
+            continue;
+        }
+        FileTransferReceiver *receiver = new FileTransferReceiver(nullptr, socket, Settings::downloadPath());
+        ++activeSessions;
+        connect(receiver, &QObject::destroyed, this, &FileTransferServer::sessionDestroyed);
         FileTransferDialog *d = new FileTransferDialog(nullptr, receiver);
         d->setAttribute(Qt::WA_DeleteOnClose);
     }
+}
+
+void FileTransferServer::sessionDestroyed()
+{
+    --activeSessions;
 }

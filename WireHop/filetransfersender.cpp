@@ -39,10 +39,11 @@
 #include "filetransfersender.h"
 
 #include "filetransferpolicy.h"
-#include "settings.h"
+#include "protocol.h"
 
-FileTransferSender::FileTransferSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files) :
-    FileTransferSession(parent, socket), files(files)
+FileTransferSender::FileTransferSender(QObject *parent, QTcpSocket *socket, const QList<QSharedPointer<QFile>> &files,
+                                       const QString &deviceName) :
+    FileTransferSession(parent, socket), files(files), deviceName(deviceName)
 {
     connect(socket, &QTcpSocket::bytesWritten, this, &FileTransferSender::socketBytesWritten);
 
@@ -54,6 +55,57 @@ FileTransferSender::FileTransferSender(QObject *parent, QTcpSocket *socket, cons
     }
 }
 
+int FileTransferSender::watchdogIntervalMsecs() const
+{
+    // The sender idles in HANDSHAKE2 while the receiving user decides, so it
+    // gets the same human-scale budget as the receiver's AWAITING_RESPONSE.
+    if (state == HANDSHAKE2)
+        return RESPONSE_TIMEOUT_MSECS;
+    // Only peers that negotiated the "ack" capability earn the full
+    // acknowledgment window; see ACK_GRACE_TIMEOUT_MSECS.
+    if (state == WAITING_FOR_ACK && !hasNegotiatedCap(Protocol::capAck()))
+        return ACK_GRACE_TIMEOUT_MSECS;
+    return FileTransferSession::watchdogIntervalMsecs();
+}
+
+void FileTransferSender::watchdogTimedOut()
+{
+    if (state == WAITING_FOR_ACK) {
+        finishUnconfirmed();
+        return;
+    }
+    FileTransferSession::watchdogTimedOut();
+}
+
+void FileTransferSender::handleSocketError()
+{
+    // Peers without the completion acknowledgment close the connection right
+    // after the last byte; that is qualified success, not an error.
+    if (state == WAITING_FOR_ACK) {
+        finishUnconfirmed();
+        return;
+    }
+    FileTransferSession::handleSocketError();
+}
+
+void FileTransferSender::finishConfirmed()
+{
+    state = FINISHED;
+    touchWatchdog();
+    emit printMessage(tr("Done!"));
+    socket->disconnectFromHost();
+    QTimer::singleShot(5000, this, &FileTransferSession::ended);
+}
+
+void FileTransferSender::finishUnconfirmed()
+{
+    state = FINISHED;
+    touchWatchdog();
+    emit printMessage(tr("Sent, but the receiver did not confirm delivery."));
+    socket->abort();
+    QTimer::singleShot(5000, this, &FileTransferSession::ended);
+}
+
 void FileTransferSender::handshake1Finished()
 {
     if (transferQ.isEmpty() || transferQ.size() > FileTransferPolicy::MAX_FILES_PER_TRANSFER) {
@@ -61,7 +113,6 @@ void FileTransferSender::handshake1Finished()
         return;
     }
 
-    QString deviceName = Settings::deviceName();
     if (!FileTransferPolicy::isSafeDeviceName(deviceName)) {
         emit errorOccurred(tr("The configured device name is invalid."));
         return;
@@ -87,6 +138,7 @@ void FileTransferSender::handshake1Finished()
     obj.insert("device_name", deviceName);
     obj.insert("device_type", QSysInfo::productType());
     obj.insert("files", jsonFiles);
+    Protocol::insertNegotiationFields(obj);
     totalSize = validatedTotalSize;
     encryptAndSend(QJsonDocument(obj).toJson(QJsonDocument::Compact));
 }
@@ -108,12 +160,26 @@ void FileTransferSender::processReceivedData(const QByteArray &data)
             return;
         }
 
+        adoptPeerNegotiation(obj);
+
         if (response.toInt() == 0) {
+            // Terminal state first: a peer that closes immediately after
+            // declining would otherwise re-enter handleSocketError() and
+            // replace the reason the user needs with "the remote host closed
+            // the connection". Nothing obliges a peer to linger after a
+            // rejection, and the Rust core does not.
+            state = FINISHED;
             emit errorOccurred(tr("The receiving device rejected your file(s)."));
             return;
         }
         state = TRANSFERRING;
         socketBytesWritten();
+    } else if (state == WAITING_FOR_ACK) {
+        QJsonDocument json = QJsonDocument::fromJson(data);
+        if (!json.isObject())
+            return;
+        if (json.object().value("ack").toDouble() == 1.0)
+            finishConfirmed();
     }
 }
 
@@ -133,10 +199,9 @@ void FileTransferSender::socketBytesWritten()
         }
     }
     if (transferQ.empty()) {
-        state = FINISHED;
-        emit printMessage(tr("Done!"));
-        socket->disconnectFromHost();
-        QTimer::singleShot(5000, this, &FileTransferSession::ended);
+        state = WAITING_FOR_ACK;
+        touchWatchdog();
+        emit printMessage(tr("Waiting for the receiver to confirm..."));
         return;
     }
     QSharedPointer<QFile> &curFile = files.front();
@@ -152,4 +217,5 @@ void FileTransferSender::socketBytesWritten()
     curMetadata.size -= static_cast<quint64>(data.size());
     transferredSize += static_cast<quint64>(data.size());
     emit updateProgress(static_cast<double>(transferredSize) / totalSize);
+    touchWatchdog();
 }

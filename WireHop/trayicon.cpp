@@ -41,6 +41,9 @@
 #include "selectfilesdialog.h"
 #include "settings.h"
 #include "trayicon.h"
+#ifdef Q_OS_MACOS
+#include "macservices.h"
+#endif
 
 TrayIcon::TrayIcon(QObject *parent) : QSystemTrayIcon(parent)
 {
@@ -95,6 +98,23 @@ void TrayIcon::sendActionTriggered()
     SelectFilesDialog *d = new SelectFilesDialog(nullptr, discoveryService);
     d->setAttribute(Qt::WA_DeleteOnClose);
     d->show();
+}
+
+void TrayIcon::sendFiles(const QStringList &filenames)
+{
+    SelectFilesDialog *d = new SelectFilesDialog(nullptr, discoveryService);
+    d->setAttribute(Qt::WA_DeleteOnClose);
+    d->addFiles(filenames);
+    d->show();
+    d->raise();
+    d->activateWindow();
+#ifdef Q_OS_MACOS
+    // Raising the window is not enough for an LSUIElement application: it is
+    // outside the normal activation order, so the dialog would open fully
+    // drawn but behind whatever the user was using -- which reads as "I
+    // clicked share and nothing happened".
+    activateApplication();
+#endif
 }
 
 void TrayIcon::openDownloadFolderActionTriggered()

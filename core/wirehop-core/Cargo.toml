@@ -1,0 +1,19 @@
+[package]
+name = "wirehop-core"
+description = "WireHop wire-protocol core: discovery, transport, and transfer engine."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+blake2.workspace = true
+chacha20poly1305.workspace = true
+rand_core.workspace = true
+rcgen.workspace = true
+rustls.workspace = true
+sha2.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+x25519-dalek.workspace = true

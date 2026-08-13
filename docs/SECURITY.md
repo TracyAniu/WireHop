@@ -33,9 +33,15 @@ Encryption alone does not establish peer identity. The user comparison and expli
 - Individual files are limited to 1 TiB and one transfer to 4 TiB. Integer, overflow, declared-byte, short-write, ciphertext, frame-size, socket-buffer, and pre-transfer free-space checks fail closed.
 - Files are received into auto-removing temporary files. Completion never overwrites an existing destination; a numbered name is selected instead.
 
+Discovery datagrams are bounded to 4096 bytes; the advertised port must be an integral value in 0-65535 (0 is the designed "not discoverable" beacon) and device names must pass `isSafeDeviceName` before reaching the peer list. Residual risk: discovery is unauthenticated UDP, so any LAN host can still insert, refresh, or (via a spoofed port-0 datagram) remove peer entries. The six-digit session-key comparison remains the only real peer check.
+
 Treat changes near `FileTransferPolicy`, `FileTransferSession`, `Crypto`, or the sender/receiver state machines as security-sensitive. Completed files from earlier in a multi-file transfer remain visible if a later file fails; only the active incomplete file is automatically removed.
 
 The two-byte encrypted-frame length and 64,000-byte sender chunk are coupled. Outbound frames are now rejected when nonce and authentication overhead would exceed 65,535 bytes. Cryptographic overhead or chunk-size changes must preserve and test that invariant.
+
+## Packaging and Signing
+
+macOS packages are deployed into a staging copy, ad-hoc signed after `macdeployqt`, and verified with `codesign --verify --deep --strict` plus a brief launch check (`scripts/package-macos.sh`). Ad-hoc signatures only satisfy local execution policy: downloaded builds still trigger Gatekeeper quarantine prompts, and there is no Developer ID signing or notarization yet. Do not present the packaged artifacts as notarized distribution builds.
 
 ## Required Review and Validation
 

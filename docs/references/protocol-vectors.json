@@ -1,0 +1,620 @@
+{
+  "_generated_by": "wirehop-cli emit-vectors",
+  "_purpose": "Cross-implementation conformance fixture for docs/references/PROTOCOL.md. Both the Rust core and the C++/Qt application verify against this file; a diff here is a wire-protocol change.",
+  "canonical_ack": "{\"ack\":1}",
+  "canonical_metadata": [
+    {
+      "canonical_json": "{\"caps\":[\"ack\"],\"device_name\":\"test-device\",\"device_type\":\"macos\",\"files\":[{\"filename\":\"a.txt\",\"size\":14}],\"protocol_version\":1}",
+      "device_name": "test-device",
+      "device_type": "macos",
+      "files": [
+        {
+          "filename": "a.txt",
+          "size": 14
+        }
+      ]
+    },
+    {
+      "canonical_json": "{\"caps\":[\"ack\"],\"device_name\":\"测试设备\",\"device_type\":\"linux\",\"files\":[{\"filename\":\"报告.pdf\",\"size\":200000},{\"filename\":\"empty.dat\",\"size\":0}],\"protocol_version\":1}",
+      "device_name": "测试设备",
+      "device_type": "linux",
+      "files": [
+        {
+          "filename": "报告.pdf",
+          "size": 200000
+        },
+        {
+          "filename": "empty.dat",
+          "size": 0
+        }
+      ]
+    }
+  ],
+  "canonical_responses": [
+    {
+      "accepted": true,
+      "canonical_json": "{\"caps\":[\"ack\"],\"protocol_version\":1,\"response\":1}"
+    },
+    {
+      "accepted": false,
+      "canonical_json": "{\"caps\":[\"ack\"],\"protocol_version\":1,\"response\":0}"
+    }
+  ],
+  "discovery_advertisements": [
+    {
+      "canonical_json": "{\"caps\":[\"ack\"],\"device_name\":\"MacBook\",\"device_type\":\"macos\",\"port\":52638,\"protocol_version\":1,\"request\":false}",
+      "device_name": "MacBook",
+      "device_type": "macos",
+      "port": 52638
+    },
+    {
+      "canonical_json": "{\"caps\":[\"ack\"],\"device_name\":\"Hidden\",\"device_type\":\"windows\",\"port\":0,\"protocol_version\":1,\"request\":false}",
+      "device_name": "Hidden",
+      "device_type": "windows",
+      "port": 0
+    },
+    {
+      "canonical_json": "{\"caps\":[\"ack\"],\"device_name\":\"测试设备\",\"device_type\":\"linux\",\"port\":1,\"protocol_version\":1,\"request\":false}",
+      "device_name": "测试设备",
+      "device_type": "linux",
+      "port": 1
+    }
+  ],
+  "discovery_parsing": [
+    {
+      "expected": {
+        "kind": "request"
+      },
+      "input": "{\"request\":true}",
+      "name": "request"
+    },
+    {
+      "expected": {
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 52638
+      },
+      "input": "{\"device_name\":\"Peer\",\"port\":52638,\"request\":false}",
+      "name": "advertisement"
+    },
+    {
+      "expected": {
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 0
+      },
+      "input": "{\"device_name\":\"Peer\",\"port\":0,\"request\":false}",
+      "name": "advertisement-unavailable"
+    },
+    {
+      "expected": {
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 5
+      },
+      "input": "{\"device_name\":\"Peer\",\"future\":[1,2],\"port\":5,\"request\":false}",
+      "name": "advertisement-unknown-key"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "not json at all",
+      "name": "not-json"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "[1,2,3]",
+      "name": "not-object"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"device_name\":\"a\",\"port\":1}",
+      "name": "request-missing"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"request\":\"true\"}",
+      "name": "request-string"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"request\":1}",
+      "name": "request-number"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"port\":1,\"request\":false}",
+      "name": "name-missing"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"device_name\":42,\"port\":1,\"request\":false}",
+      "name": "name-not-string"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"device_name\":\"\",\"port\":1,\"request\":false}",
+      "name": "name-empty"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"device_name\":\"evil‮name\",\"port\":1,\"request\":false}",
+      "name": "name-bidi-override"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"device_name\":\"a\",\"request\":false}",
+      "name": "port-missing"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"device_name\":\"a\",\"port\":\"1\",\"request\":false}",
+      "name": "port-string"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"device_name\":\"a\",\"port\":-1,\"request\":false}",
+      "name": "port-negative"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"device_name\":\"a\",\"port\":70000,\"request\":false}",
+      "name": "port-too-large"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"device_name\":\"a\",\"port\":1.5,\"request\":false}",
+      "name": "port-fractional"
+    },
+    {
+      "expected": {
+        "kind": "invalid"
+      },
+      "input": "{\"device_name\":\"a\",\"pad\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"port\":1,\"request\":false}",
+      "name": "oversized"
+    }
+  ],
+  "discovery_request": "{\"request\":true}",
+  "dnssd_instance_names": [
+    {
+      "device_name": "MacBook",
+      "instance": "MacBook"
+    },
+    {
+      "device_name": "MacBook",
+      "instance": "MacBook (2)"
+    },
+    {
+      "device_name": "MacBook",
+      "instance": "MacBook (17)"
+    },
+    {
+      "device_name": "Mac (work)",
+      "instance": "Mac (work)"
+    },
+    {
+      "device_name": "Mac ()",
+      "instance": "Mac ()"
+    },
+    {
+      "device_name": "(2)",
+      "instance": "(2)"
+    },
+    {
+      "device_name": "测试设备",
+      "instance": "测试设备 (3)"
+    }
+  ],
+  "dnssd_service_type": "_wirehop._tcp",
+  "dnssd_txt": [
+    {
+      "expected": {
+        "caps": [
+          "ack"
+        ],
+        "device_name": "MacBook",
+        "device_type": "macos",
+        "kind": "advertisement",
+        "port": 52638,
+        "protocol_version": 1
+      },
+      "instance": "MacBook",
+      "name": "current",
+      "port": 52638,
+      "txt": [
+        [
+          "v",
+          "1"
+        ],
+        [
+          "caps",
+          "ack"
+        ],
+        [
+          "type",
+          "macos"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [
+          "ack"
+        ],
+        "device_name": "MacBook",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 52638,
+        "protocol_version": 1
+      },
+      "instance": "MacBook",
+      "name": "upper-keys",
+      "port": 52638,
+      "txt": [
+        [
+          "V",
+          "1"
+        ],
+        [
+          "CAPS",
+          "ack"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "Bare",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 52638,
+        "protocol_version": 0
+      },
+      "instance": "Bare",
+      "name": "bare",
+      "port": 52638,
+      "txt": []
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "iPhone",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 52638,
+        "protocol_version": 1
+      },
+      "instance": "iPhone (2)",
+      "name": "conflict-suffix",
+      "port": 52638,
+      "txt": [
+        [
+          "v",
+          "1"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 5,
+        "protocol_version": 1
+      },
+      "instance": "Peer",
+      "name": "unknown-key",
+      "port": 5,
+      "txt": [
+        [
+          "v",
+          "1"
+        ],
+        [
+          "future",
+          "x"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 5,
+        "protocol_version": 0
+      },
+      "instance": "Peer",
+      "name": "bad-version",
+      "port": 5,
+      "txt": [
+        [
+          "v",
+          "one"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 5,
+        "protocol_version": 0
+      },
+      "instance": "Peer",
+      "name": "caps-empty-entry",
+      "port": 5,
+      "txt": [
+        [
+          "caps",
+          "ack,,resume"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "caps": [],
+        "device_name": "Peer",
+        "device_type": "",
+        "kind": "advertisement",
+        "port": 5,
+        "protocol_version": 0
+      },
+      "instance": "Peer",
+      "name": "caps-oversized",
+      "port": 5,
+      "txt": [
+        [
+          "caps",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+      ]
+    },
+    {
+      "expected": {
+        "kind": "rejected"
+      },
+      "instance": "Peer",
+      "name": "zero-port",
+      "port": 0,
+      "txt": []
+    },
+    {
+      "expected": {
+        "kind": "rejected"
+      },
+      "instance": "",
+      "name": "empty-instance",
+      "port": 5,
+      "txt": []
+    },
+    {
+      "expected": {
+        "kind": "rejected"
+      },
+      "instance": "evil‮name",
+      "name": "bidi-instance",
+      "port": 5,
+      "txt": []
+    }
+  ],
+  "negotiation_parsing": [
+    {
+      "expected_ack_negotiated": true,
+      "expected_caps": [
+        "ack"
+      ],
+      "expected_version": 1,
+      "input": {
+        "caps": [
+          "ack"
+        ],
+        "protocol_version": 1
+      },
+      "name": "current"
+    },
+    {
+      "expected_ack_negotiated": false,
+      "expected_caps": [],
+      "expected_version": 0,
+      "input": {},
+      "name": "absent"
+    },
+    {
+      "expected_ack_negotiated": false,
+      "expected_caps": [
+        "resume"
+      ],
+      "expected_version": 1,
+      "input": {
+        "caps": [
+          "resume"
+        ],
+        "protocol_version": 1
+      },
+      "name": "unknown-cap"
+    },
+    {
+      "expected_ack_negotiated": true,
+      "expected_caps": [
+        "ack"
+      ],
+      "expected_version": 0,
+      "input": {
+        "caps": [
+          "ack"
+        ],
+        "protocol_version": 0
+      },
+      "name": "version-zero"
+    },
+    {
+      "expected_ack_negotiated": true,
+      "expected_caps": [
+        "ack"
+      ],
+      "expected_version": 0,
+      "input": {
+        "caps": [
+          "ack"
+        ],
+        "protocol_version": "1"
+      },
+      "name": "version-string"
+    },
+    {
+      "expected_ack_negotiated": true,
+      "expected_caps": [
+        "ack"
+      ],
+      "expected_version": 0,
+      "input": {
+        "caps": [
+          "ack"
+        ],
+        "protocol_version": 1.5
+      },
+      "name": "version-fractional"
+    },
+    {
+      "expected_ack_negotiated": false,
+      "expected_caps": [],
+      "expected_version": 1,
+      "input": {
+        "caps": "ack",
+        "protocol_version": 1
+      },
+      "name": "caps-not-array"
+    },
+    {
+      "expected_ack_negotiated": false,
+      "expected_caps": [],
+      "expected_version": 1,
+      "input": {
+        "caps": [
+          "ack",
+          42
+        ],
+        "protocol_version": 1
+      },
+      "name": "caps-non-string"
+    },
+    {
+      "expected_ack_negotiated": false,
+      "expected_caps": [],
+      "expected_version": 1,
+      "input": {
+        "caps": [
+          ""
+        ],
+        "protocol_version": 1
+      },
+      "name": "caps-empty-entry"
+    },
+    {
+      "expected_ack_negotiated": false,
+      "expected_caps": [],
+      "expected_version": 1,
+      "input": {
+        "caps": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ],
+        "protocol_version": 1
+      },
+      "name": "caps-oversized-entry"
+    },
+    {
+      "expected_ack_negotiated": false,
+      "expected_caps": [],
+      "expected_version": 1,
+      "input": {
+        "caps": [
+          "cap0",
+          "cap1",
+          "cap2",
+          "cap3",
+          "cap4",
+          "cap5",
+          "cap6",
+          "cap7",
+          "cap8",
+          "cap9",
+          "cap10",
+          "cap11",
+          "cap12",
+          "cap13",
+          "cap14",
+          "cap15",
+          "cap16",
+          "cap17",
+          "cap18",
+          "cap19",
+          "cap20",
+          "cap21",
+          "cap22",
+          "cap23",
+          "cap24",
+          "cap25",
+          "cap26",
+          "cap27",
+          "cap28",
+          "cap29",
+          "cap30",
+          "cap31",
+          "cap32"
+        ],
+        "protocol_version": 1
+      },
+      "name": "caps-too-many"
+    }
+  ],
+  "protocol_version": 1,
+  "session_codes": [
+    {
+      "code": "178239",
+      "session_key_hex": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "code": "155165",
+      "session_key_hex": "0707070707070707070707070707070707070707070707070707070707070707"
+    },
+    {
+      "code": "593485",
+      "session_key_hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    }
+  ]
+}

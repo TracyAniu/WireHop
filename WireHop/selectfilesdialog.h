@@ -47,6 +47,7 @@ class SelectFilesDialog : public QDialog {
 public:
     explicit SelectFilesDialog(QWidget *parent, DiscoveryService &discoveryService);
     ~SelectFilesDialog();
+    void addFiles(const QStringList &filenames);
 private:
     Ui::SelectFilesDialog *ui;
     DiscoveryService &discoveryService;

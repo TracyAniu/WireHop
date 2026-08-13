@@ -57,6 +57,7 @@ private slots:
     void respond(int result);
     void sessionUpdateProgress(double progress);
     void sessionErrorOccurred(const QString &msg);
+    void sessionOpenDownloadFolder(const QString &path);
     void sessionFileMetadataReady(const QList<FileTransferSession::FileMetadata> &metadata, quint64 totalSize,
                                   const QString &deviceName, const QString &sessionKeyDigest);
 };

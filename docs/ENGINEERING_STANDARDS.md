@@ -17,6 +17,10 @@
 - Preserve the framing limit: encrypted messages are prefixed by a two-byte length. Check size arithmetic before narrowing to `quint16` or converting signed values.
 - Make terminal success, rejection, socket error, and cleanup paths explicit and idempotent.
 - Protocol changes must document compatibility, rollout/versioning, and failure behavior in an architecture decision.
+- Bound untrusted strings in **UTF-8 bytes**, never `QString::size()` (UTF-16 code units admit up to 4x the intended byte length). Follow `MAX_FILENAME_BYTES` / `MAX_CAP_BYTES`.
+- Serialize wire collections in a deterministic order. `QSet`/`QHash` iteration order is randomized per process, which makes frames non-reproducible and blocks any future transcript digest.
+- Gate behavior on the *negotiated* capability (peer advertises it **and** this build implements it), not on the peer's claim alone. Additive frames that legacy peers already tolerate need no gating — capabilities gate behavior changes.
+- Justify a compatibility workaround against peers that actually exist. Check whether the affected build was ever released (`git branch --contains`, tags) before trading real behavior for a hypothetical peer.
 
 ## Errors and User Feedback
 

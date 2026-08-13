@@ -13,7 +13,8 @@ public:
         MAX_FILES_PER_TRANSFER = 1024,
         MAX_FILENAME_BYTES = 255,
         MAX_DEVICE_NAME_BYTES = 255,
-        MAX_COLLISION_ATTEMPTS = 10000
+        MAX_COLLISION_ATTEMPTS = 10000,
+        MAX_DISCOVERY_DATAGRAM_BYTES = 4096
     };
 
     static quint64 maxFileSize();
@@ -21,6 +22,7 @@ public:
     static bool isSafeFilename(const QString &filename);
     static bool isSafeDeviceName(const QString &deviceName);
     static bool parseFileSize(double value, quint64 *size);
+    static bool parsePort(double value, quint16 *port);
     static bool canAppendFile(quint64 currentTotal, quint64 fileSize);
     static QString destinationPath(const QString &downloadPath, const QString &filename,
                                    int duplicateIndex);

@@ -31,6 +31,8 @@
  */
 
 #include <QAbstractButton>
+#include <QDesktopServices>
+#include <QUrl>
 
 #include "filetransferdialog.h"
 #include "ui_filetransferdialog.h"
@@ -53,6 +55,7 @@ FileTransferDialog::FileTransferDialog(QWidget *parent, FileTransferSession *ses
     connect(session, &FileTransferSession::updateProgress, this, &FileTransferDialog::sessionUpdateProgress);
     connect(session, &FileTransferSession::errorOccurred, this, &FileTransferDialog::sessionErrorOccurred);
     connect(session, &FileTransferSession::fileMetadataReady, this, &FileTransferDialog::sessionFileMetadataReady);
+    connect(session, &FileTransferSession::openDownloadFolder, this, &FileTransferDialog::sessionOpenDownloadFolder);
     connect(session, &FileTransferSession::ended, this, &FileTransferDialog::accept);
     session->start();
 }
@@ -83,6 +86,11 @@ void FileTransferDialog::sessionErrorOccurred(const QString &msg)
     if (isVisible())
         QMessageBox::critical(this, QApplication::applicationName(), msg);
     done(Rejected);
+}
+
+void FileTransferDialog::sessionOpenDownloadFolder(const QString &path)
+{
+    QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
 
 void FileTransferDialog::sessionFileMetadataReady(const QList<FileTransferSession::FileMetadata> &metadata,
