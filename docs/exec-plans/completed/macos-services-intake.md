@@ -49,12 +49,13 @@ Right-clicking file(s) in Finder shows "Send with WireHop" under Services (local
 - [x] `./scripts/lint.sh`, `./scripts/typecheck.sh`, `./scripts/test.sh` (35 passing), `./scripts/smoke.sh`.
 - [x] Bundle verified: NSServices present in built Info.plist; zh-Hans.lproj copied into Resources.
 - [x] Service registered via lsregister + pbs; listed in `pbs -dump_pboard`; programmatic `NSPerformService("Send with WireHop", pboard)` returned true and launched the app.
-- [ ] Finder right-click visual confirmation and zh-Hans menu title (user-manual; accessibility permissions block scripted window inspection).
+- [x] Finder right-click visual confirmation — performed by the owner on 2026-08-12. It surfaced a real defect rather than passing quietly: the dialog opened but never came to the front, because an LSUIElement application is outside the normal activation order. Fixed in `2f4ceee`. The zh-Hans menu title remains visually unconfirmed.
 
 ## Progress Log
 
 - 2026-08-12: Plan created after exploration; implementation starting.
 - 2026-08-12: Implemented and machine-verified end-to-end (registration + NSPerformService launch). Discovered and guarded a qmake pitfall: the generated bundle Info.plist has no dependency on the source plist, so `_common.sh` now deletes the stale copy when the source is newer.
+- 2026-08-13: Closed. The final open item — Finder right-click confirmation — was exercised by the owner and found the activation defect described above; `CGWindowListCopyWindowInfo` and `NSWorkspace` proved the dialog existed at full opacity while another application held the front, which is why it read as "nothing happened". Two environmental factors were identified and left to configuration rather than code: a three-display setup places a parentless dialog on the screen under the cursor, and a menu-bar manager (Bartender) hides the status item that is this app's only entry point.
 - 2026-08-12: User reported the Finder attempt failed with "cannot open the specified document or URL" — root cause: no `CFBundleDocumentTypes`, so LaunchServices refused document-open requests. Fixed (viewer role, rank None, public.data). Share-sheet spike succeeded: a hand-built, ad-hoc-signed appex (clang + `-e _NSExtensionMain`) registers and enables in pluginkit on macOS 15 — but only when signed with its sandbox entitlements AFTER any `--deep` app signature (codesign --deep strips nested entitlements; this cost the first spike round). Productionized: `WireHop/shareext/`, `scripts/build-share-extension.sh`, QMAKE_POST_LINK embedding, corrected signing order in `package-macos.sh`. Verified: `open -a` document path now succeeds and launches the app (previously the exact reported error); full packaging green.
 
 ## Open Questions
@@ -63,4 +64,4 @@ Right-clicking file(s) in Finder shows "Send with WireHop" under Services (local
 
 ## Completion Notes
 
-Feature implemented on branch `macos-share-services`. The intake chain is Finder Services / QFileOpenEvent / CLI args → `TrayIcon::sendFiles` → preloaded `SelectFilesDialog` (directories rejected, existing dedupe and open checks reused). Programmatic service invocation verified; the Finder visual click and Chinese menu title remain user-confirmed. Residual notes: services route to the registered bundle — during development re-run `lsregister -f` after moving the app; the true Share-sheet (.appex) remains deferred until Developer ID signing exists.
+Feature complete. Implemented on branch `macos-share-services`; the intake chain was finally exercised end-to-end through Finder on 2026-08-13, which is what exposed the activation defect fixed in `2f4ceee`. The intake chain is Finder Services / QFileOpenEvent / CLI args → `TrayIcon::sendFiles` → preloaded `SelectFilesDialog` (directories rejected, existing dedupe and open checks reused). Programmatic service invocation verified; the Finder visual click and Chinese menu title remain user-confirmed. Residual notes: services route to the registered bundle — during development re-run `lsregister -f` after moving the app; the true Share-sheet (.appex) remains deferred until Developer ID signing exists.
