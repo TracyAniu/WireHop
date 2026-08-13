@@ -25,8 +25,15 @@ pub const ACK_TIMEOUT: Duration = Duration::from_secs(10);
 /// Short grace for a capless peer, which may still acknowledge or simply
 /// close. See the `ack` capability notes in `PROTOCOL.md`.
 pub const ACK_GRACE_TIMEOUT: Duration = Duration::from_secs(2);
-/// Bound on how long any single blocking read may stall.
+/// Bound on how long any single blocking read may stall mid-transfer.
 pub const IO_TIMEOUT: Duration = Duration::from_secs(30);
+/// How long a sender waits for the receiver's accept or reject.
+///
+/// This window is a person, not a machine: the receiving user has to read the
+/// request and compare a six-digit code. Reusing the mid-transfer timeout here
+/// would fail every transfer where someone took more than half a minute to
+/// decide. Matches the Qt implementation's response timeout.
+pub const RESPONSE_TIMEOUT: Duration = Duration::from_secs(300);
 
 /// How a completed send ended.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -125,7 +132,14 @@ pub fn send_files(
         .write_all(&frame::encode(&crypto, &metadata.to_canonical_json())?)
         .map_err(Error::Io)?;
 
+    // Waiting on a human decision, not on the network.
+    stream
+        .set_read_timeout(Some(RESPONSE_TIMEOUT))
+        .map_err(Error::Io)?;
     let (accepted, peer) = message::parse_response(&next_frame(stream, &mut reader, &crypto)?)?;
+    stream
+        .set_read_timeout(Some(IO_TIMEOUT))
+        .map_err(Error::Io)?;
     if !accepted {
         return Ok(SendOutcome::Rejected);
     }

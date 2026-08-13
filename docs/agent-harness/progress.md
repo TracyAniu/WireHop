@@ -1,5 +1,15 @@
 # Agent Progress
 
+## Open question — unexplained acknowledgment without a delivered file
+
+On 2026-08-12 at 21:05 a real transfer from `wirehop-cli` to the packaged macOS application returned `outcome confirmed`, which the sender only reports after receiving `{"ack":1}` — and the Qt receiver only sends that after committing every file. No file was ever found: not in `~/Downloads/WireHop`, not anywhere under `$HOME`, and not in Spotlight.
+
+Evidence gathered since: the directory is writable and not blocked by TCC (a `wirehop-cli` receive into the same path succeeds), and adding a file does update the directory's mtime — which was still 21:05:17, so the file was not written and later removed. Attempts to reproduce failed at the response stage rather than the commit stage, because the sender's read timeout was too short for a human decision (fixed separately), so the anomaly itself was never re-observed.
+
+Automated coverage of this exact path — the interop suite driving the real Qt receiver — passes on macOS and now on Linux CI. So this is either environment-specific or a rare path, not a broadly broken receive.
+
+**Resolving it needs one manual accept**: send with `wirehop-cli send --port <app port> --name probe <file>`, accept in the dialog, and check `~/Downloads/WireHop`. Worth doing before this lands on master.
+
 Use this file only for cross-session handoffs. Keep entries dated, factual, and linked to an active execution plan when one exists. Routine one-session changes do not need an entry.
 
 - 2026-08-11: Initialized the repository-native agent harness. Documented the Qt/qmake architecture and security boundaries; added build, lint, startup-smoke, and intentionally unconfigured-test wrappers. Harness lint, a full macOS arm64 build with Qt 5.15.16/libsodium 1.0.20, and native startup smoke passed. `scripts/test.sh` intentionally returned status 2 because no automated suite exists. qmake warned that this Qt build was tested against an older macOS SDK than the local 15.2 SDK. No product source was changed.
